@@ -43,6 +43,12 @@ KbWidget::KbWidget(QWidget *parent, const QString &path, const QString &prefsBas
         ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->lightTab));
         ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->miscTab));
     }
+    // Remove Performance tab from non-mice
+    if(!device->isMouse())
+        ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->perfTab));
+    // Remove Misc tab from non-keyboards
+    if(!device->isKeyboard())
+        ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->miscTab));
     // Hide poll rate and FW update as appropriate
     if(!device->features.contains("pollrate")){
         ui->pollLabel->hide();
@@ -68,6 +74,8 @@ KbWidget::~KbWidget(){
 }
 
 void KbWidget::saveSettings(){
+    if(!device->needsSave())
+        return;
     CkbSettings settings(prefsPath, true);
     device->save(settings);
     settings.endGroup();
@@ -75,8 +83,8 @@ void KbWidget::saveSettings(){
 
 void KbWidget::saveIfNeeded(){
     quint64 now = QDateTime::currentMSecsSinceEpoch();
-    // Auto-save every 10s (if settings have changed)
-    if(device->needsSave() && now >= lastAutoSave + 10 * 1000){
+    // Auto-save every 15s (if settings have changed, and no other writes are in progress)
+    if(now >= lastAutoSave + 15 * 1000 && !CkbSettings::isBusy()){
         saveSettings();
         lastAutoSave = now;
     }
@@ -173,6 +181,7 @@ void KbWidget::modeChanged(bool spontaneous){
     // Update tabs
     ui->lightWidget->setLight(device->currentLight());
     ui->bindWidget->setBind(device->currentBind(), device->currentProfile());
+    ui->perfWidget->setPerf(device->currentPerf());
     // Update selection
     if(spontaneous)
         ui->modesList->setCurrentRow(index);
@@ -314,7 +323,6 @@ void KbWidget::devUpdate(){
     ui->serialLabel->setText(device->usbSerial);
     ui->fwLabel->setText(device->firmware);
     ui->pollLabel->setText(device->pollrate);
-    ui->layoutBox->setCurrentIndex(device->layout());
 }
 
 void KbWidget::modeUpdate(){
@@ -361,10 +369,6 @@ void KbWidget::on_inactiveSwitchBox_activated(int index){
 void KbWidget::on_muteCheck_clicked(bool checked){
     if(ui->inactiveSwitchCheck->isCheckable())
         currentMode->light()->showMute(checked);
-}
-
-void KbWidget::on_layoutBox_activated(int index){
-    device->layout((KeyMap::Layout)index);
 }
 
 void KbWidget::on_tabWidget_currentChanged(int index){

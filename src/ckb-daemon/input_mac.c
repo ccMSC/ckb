@@ -228,6 +228,7 @@ int os_inputopen(usbdevice* kb){
         }
         usleep(10000);
     }
+
     clearkeys(kb);
     return 0;
 }

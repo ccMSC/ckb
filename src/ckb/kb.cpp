@@ -6,14 +6,17 @@
 
 static QSet<Kb*> activeDevices;
 int Kb::_frameRate = 30;
+KeyMap::Layout Kb::_layout = KeyMap::NO_LAYOUT;
+bool Kb::_dither = false;
 
 Kb::Kb(QObject *parent, const QString& path) :
     QThread(parent), devpath(path), cmdpath(path + "/cmd"),
     features("N/A"), firmware("N/A"), pollrate("N/A"),
-    _currentProfile(0), _currentMode(0), _model(KeyMap::NO_MODEL), _layout(KeyMap::NO_LAYOUT),
+    _currentProfile(0), _currentMode(0), _model(KeyMap::NO_MODEL),
     _hwProfile(0), prevProfile(0), prevMode(0),
-    cmd(cmdpath), notifyNumber(1), _needsSave(false), hwLoading(true)
+    cmd(cmdpath), notifyNumber(1), _needsSave(false)
 {
+    memset(hwLoading, 0, sizeof(hwLoading));
     // Get the features, model, serial number, FW version (if available), and poll rate (if available) from /dev nodes
     QFile ftpath(path + "/features"), mpath(path + "/model"), spath(path + "/serial"), fwpath(path + "/fwversion"), ppath(path + "/pollrate");
     if(ftpath.open(QIODevice::ReadOnly)){
@@ -73,12 +76,19 @@ Kb::Kb(QObject *parent, const QString& path) :
     }
     cmd.write(QString("notifyon %1\n").arg(notifyNumber).toLatin1());
     cmd.flush();
+    // Activate device, apply settings, and ask for hardware profile
     cmd.write(QString("fps %1\n").arg(_frameRate).toLatin1());
-    cmd.write(QString("active\n@%1 get :hwprofileid").arg(notifyNumber).toLatin1());
+    cmd.write(QString("dither %1\n").arg(static_cast<int>(_dither)).toLatin1());
+#ifdef Q_OS_MACX
+    // Write ANSI/ISO flag to daemon (OSX only)
+    cmd.write("layout ");
+    cmd.write(KeyMap::isISO(_layout) ? "iso" : "ansi");
+#endif
+    cmd.write(QString("\nactive\n@%1 get :hwprofileid").arg(notifyNumber).toLatin1());
+    hwLoading[0] = true;
     for(int i = 0; i < hwModeCount; i++){
         cmd.write(QString(" mode %1 get :hwid").arg(i + 1).toLatin1());
-        if(isMouse())
-            cmd.write(" :hwdpi :hwdpisel :hwlift :hwsnap");
+        hwLoading[i + 1] = true;
     }
     cmd.write("\n");
     cmd.flush();
@@ -122,13 +132,16 @@ void Kb::frameRate(int newFrameRate){
     }
 }
 
-void Kb::load(QSettings &settings){
-    _needsSave = false;
-    // Read layout
-    _layout = KeyMap::getLayout(settings.value("Layout").toString());
-    if(_layout == KeyMap::NO_LAYOUT)
-        // If the layout couldn't be read, try to auto-detect it from the system locale
-        _layout = KeyMap::locale();
+void Kb::layout(KeyMap::Layout newLayout){
+    if(newLayout == KeyMap::NO_LAYOUT || newLayout == _layout)
+        return;
+    _layout = newLayout;
+    // Update all devices
+    foreach(Kb* kb, activeDevices)
+        kb->updateLayout();
+}
+
+void Kb::updateLayout(){
 #ifdef Q_OS_MACX
     // Write ANSI/ISO flag to daemon (OSX only)
     cmd.write("layout ");
@@ -136,8 +149,29 @@ void Kb::load(QSettings &settings){
     cmd.write("\n");
     cmd.flush();
 #endif
+    foreach(KbProfile* profile, _profiles)
+        profile->keyMap(getKeyMap());
+    if(_hwProfile && !_profiles.contains(_hwProfile))
+        _hwProfile->keyMap(getKeyMap());
+    // Stop all animations as they'll need to be restarted
+    foreach(KbMode* mode, _currentProfile->modes())
+        mode->light()->close();
     emit infoUpdated();
+}
 
+void Kb::dither(bool newDither){
+    if(newDither == _dither)
+        return;
+    _dither = newDither;
+    // Update all devices
+    foreach(Kb* kb, activeDevices){
+        kb->cmd.write(QString("dither %1\n").arg(static_cast<int>(newDither)).toLatin1());
+        kb->cmd.flush();
+    }
+}
+
+void Kb::load(CkbSettings& settings){
+    _needsSave = false;
     // Read profiles
     KbProfile* newCurrentProfile = 0;
     QString current = settings.value("CurrentProfile").toString().trimmed().toUpper();
@@ -155,15 +189,17 @@ void Kb::load(QSettings &settings){
     else {
         // If nothing was loaded, load the demo profile
         QSettings demoSettings(":/txt/demoprofile.conf", QSettings::IniFormat, this);
-        KbProfile* demo = new KbProfile(this, getKeyMap(), demoSettings, "{BA7FC152-2D51-4C26-A7A6-A036CC93D924}");
+        CkbSettings cSettings(demoSettings);
+        KbProfile* demo = new KbProfile(this, getKeyMap(), cSettings, "{BA7FC152-2D51-4C26-A7A6-A036CC93D924}");
         _profiles.append(demo);
         setCurrentProfile(demo);
     }
 
+    emit infoUpdated();
     emit profileAdded();
 }
 
-void Kb::save(QSettings& settings){
+void Kb::save(CkbSettings& settings){
     _needsSave = false;
     QString guids, currentGuid;
     foreach(KbProfile* profile, _profiles){
@@ -174,7 +210,6 @@ void Kb::save(QSettings& settings){
     }
     settings.setValue("CurrentProfile", currentGuid);
     settings.setValue("Profiles", guids.trimmed());
-    settings.setValue("Layout", KeyMap::getLayout(_layout));
 }
 
 void Kb::hwSave(){
@@ -186,7 +221,8 @@ void Kb::hwSave(){
         deletePrevious();
     }
     hwProfile(_currentProfile);
-    hwLoading = false;
+    _hwProfile->id().hwModified = _hwProfile->id().modified;
+    _hwProfile->setNeedsSave();
     // Re-send the current profile from scratch to ensure consistency
     writeProfileHeader();
     // Make sure there are enough modes
@@ -212,6 +248,9 @@ void Kb::hwSave(){
         light->base(cmd, true);
         cmd.write(" ");
         perf->update(cmd, true, false);
+        // Update mode ID
+        mode->id().hwModified = mode->id().modified;
+        mode->setNeedsSave();
     }
     cmd.write("\n");
 
@@ -239,27 +278,6 @@ void Kb::writeProfileHeader(){
     cmd.write(_currentProfile->id().guidString().toLatin1());
     cmd.write(" ");
     cmd.write(_currentProfile->id().modifiedString().toLatin1());
-}
-
-void Kb::layout(KeyMap::Layout newLayout){
-    if(newLayout == KeyMap::NO_LAYOUT)
-        return;
-    _layout = newLayout;
-#ifdef Q_OS_MACX
-    // Write ANSI/ISO flag to daemon (OSX only)
-    cmd.write("layout ");
-    cmd.write(KeyMap::isISO(_layout) ? "iso" : "ansi");
-    cmd.write("\n");
-    cmd.flush();
-#endif
-    foreach(KbProfile* profile, _profiles)
-        profile->keyMap(getKeyMap());
-    if(_hwProfile && !_profiles.contains(_hwProfile))
-        _hwProfile->keyMap(getKeyMap());
-    // Stop all animations as they'll need to be restarted
-    foreach(KbMode* mode, _currentProfile->modes())
-        mode->light()->close();
-    emit infoUpdated();
 }
 
 void Kb::fwUpdate(const QString& path){
@@ -324,7 +342,7 @@ void Kb::frameUpdate(){
 
     // Send lighting/binding to driver
     cmd.write(QString("mode %1 switch ").arg(index + 1).toLatin1());
-    light->frameUpdate(cmd, dimKeys);
+    light->frameUpdate(cmd, dimKeys, perf->indicatorLights());
     cmd.write(QString("\n@%1 ").arg(notifyNumber).toLatin1());
     bind->update(cmd, changed);
     cmd.write("\n");
@@ -358,7 +376,7 @@ void Kb::run(){
     // Wait a small amount of time for the node to open (100ms)
     QThread::usleep(100000);
     if(!notify.open(QIODevice::ReadOnly)){
-        // If it's still not open, try again before giving up (10s total)
+        // If it's still not open, try again before giving up (1s at a time, 10s total)
         QThread::usleep(900000);
         for(int i = 1; i < 10; i++){
             if(notify.open(QIODevice::ReadOnly))
@@ -411,17 +429,21 @@ void Kb::readNotify(QString line){
         // If it wasn't found, create it
         if(!newProfile){
             newProfile = new KbProfile(this, getKeyMap(), guid, modified);
-            hwLoading = true;
+            hwLoading[0] = true;
             cmd.write(QString("@%1 get :hwprofilename\n").arg(notifyNumber).toLatin1());
             cmd.flush();
         } else {
-            // If it's been updated (and we're loading hardware data), fetch its name
-            if(newProfile->id().modifiedString() != modified){
+            // If it's been updated, fetch its name
+            if(newProfile->id().hwModifiedString() != modified){
                 newProfile->id().modifiedString(modified);
-                if(hwLoading){
+                newProfile->id().hwModifiedString(modified);
+                newProfile->setNeedsSave();
+                if(hwLoading[0]){
                     cmd.write(QString("@%1 get :hwprofilename\n").arg(notifyNumber).toLatin1());
                     cmd.flush();
                 }
+            } else {
+                hwLoading[0] = false;
             }
         }
         hwProfile(newProfile);
@@ -431,7 +453,7 @@ void Kb::readNotify(QString line){
     } else if(components[0] == "hwprofilename"){
         // Hardware profile name
         QString name = QUrl::fromPercentEncoding(components[1].toUtf8());
-        if(!_hwProfile)
+        if(!_hwProfile || !hwLoading[0])
             return;
         QString oldName = _hwProfile->name();
         if(!(oldName.length() >= name.length() && oldName.left(name.length()) == name)){
@@ -445,28 +467,32 @@ void Kb::readNotify(QString line){
             return;
         int mode = components[1].toInt() - 1;
         if(components[2] == "hwid"){
-            if(components.count() < 5 || !_hwProfile)
+            if(components.count() < 5 || mode >= HWMODE_MAX || !_hwProfile)
                 return;
             // Hardware mode ID
             QString guid = components[3];
             QString modified = components[4];
             // Look for this mode in the hardware profile
             KbMode* hwMode = 0;
-            bool isNew = false;
-            foreach(KbMode* mode, _hwProfile->modes()){
-                if(mode->id().guid == guid){
-                    hwMode = mode;
-                    if(mode->id().modifiedString() != modified){
+            bool isUpdated = false;
+            foreach(KbMode* kbMode, _hwProfile->modes()){
+                if(kbMode->id().guid == guid){
+                    hwMode = kbMode;
+                    if(kbMode->id().hwModifiedString() != modified){
                         // Update modification time
                         hwMode->id().modifiedString(modified);
-                        isNew = true;
+                        hwMode->id().hwModifiedString(modified);
+                        hwMode->setNeedsSave();
+                        isUpdated = true;
+                    } else {
+                        hwLoading[mode + 1] = false;
                     }
                     break;
                 }
             }
             // If it wasn't found, add it
             if(!hwMode){
-                isNew = true;
+                isUpdated = true;
                 hwMode = new KbMode(this, getKeyMap(), guid, modified);
                 _hwProfile->append(hwMode);
                 // If the hardware profile now contains enough modes to be added to the list, do so
@@ -478,18 +504,21 @@ void Kb::readNotify(QString line){
                         setCurrentProfile(_hwProfile);
                 }
             }
-            // If the mode isn't in the right place, move it
-            int index = _hwProfile->indexOf(hwMode);
-            if(isNew && mode < _hwProfile->modeCount() && index != mode)
-                _hwProfile->move(index, mode);
-            // If loading hardware profile, fetch the updated data
-            if(isNew && hwLoading){
-                cmd.write(QString("@%1 mode %2 get :hwname :hwrgb\n").arg(notifyNumber).arg(mode + 1).toLatin1());
+            if(hwLoading[mode + 1] && isUpdated){
+                // If the mode isn't in the right place, move it
+                int index = _hwProfile->indexOf(hwMode);
+                if(mode < _hwProfile->modeCount() && index != mode)
+                    _hwProfile->move(index, mode);
+                // Fetch the updated data
+                cmd.write(QString("@%1 mode %2 get :hwname :hwrgb").arg(notifyNumber).arg(mode + 1).toLatin1());
+                if(isMouse())
+                    cmd.write(" :hwdpi :hwdpisel :hwlift :hwsnap");
+                cmd.write("\n");
                 cmd.flush();
             }
         } else if(components[2] == "hwname"){
             // Mode name - update list
-            if(!_hwProfile || _hwProfile->modeCount() <= mode)
+            if(!_hwProfile || _hwProfile->modeCount() <= mode || mode >= HWMODE_MAX || !hwLoading[mode + 1])
                 return;
             KbMode* hwMode = _hwProfile->modes()[mode];
             QString name = QUrl::fromPercentEncoding(components[3].toUtf8());
@@ -502,21 +531,22 @@ void Kb::readNotify(QString line){
             }
         } else if(components[2] == "hwrgb"){
             // RGB - set mode lighting
-            if(!_hwProfile || _hwProfile->modeCount() <= mode)
+            if(!_hwProfile || _hwProfile->modeCount() <= mode || mode >= HWMODE_MAX || !hwLoading[mode + 1])
                 return;
-            KbLight* light = _hwProfile->modes()[mode]->light();
-            // If it's a color command, scan the input
+            KbMode* kbmode = _hwProfile->modes()[mode];
+            KbLight* light = kbmode->light();
+            // Scan the input for colors
             QColor lightColor = QColor();
             for(int i = 3; i < components.count(); i++){
                 QString comp = components[i];
                 if(comp.indexOf(":") < 0){
-                    // Single hex constant?
+                    // No ":" - single hex constant
                     bool ok;
                     int rgb = comp.toInt(&ok, 16);
                     if(ok)
                         light->color(QColor::fromRgb((QRgb)rgb));
                 } else {
-                    // List of keys. Parse color first
+                    // List of keys ("a,b:xxxxxx"). Parse color first
                     QStringList set = comp.split(":");
                     bool ok;
                     int rgb = set[1].toInt(&ok, 16);
@@ -525,10 +555,18 @@ void Kb::readNotify(QString line){
                         // Parse keys
                         QStringList keys = set[0].split(",");
                         foreach(QString key, keys){
-                            light->color(key, color);
                             if(key == "light")
-                                // Extrapolate the Light key to the M-keys and Lock key, since those will be set to black on exit
+                                // Extrapolate the Light key to the M-keys and Lock key, since those will be set to black on hwsave
                                 lightColor = color;
+                            if(key.startsWith("dpi") && key.length() > 3){
+                                // DPI levels go to the KbPerf object instead of KbLight
+                                bool ok = false;
+                                int index = key.mid(3).toInt(&ok);
+                                if(ok)
+                                    kbmode->perf()->dpiColor(index, color);
+                                continue;
+                            }
+                            light->color(key, color);
                         }
                     }
                 }
@@ -542,7 +580,7 @@ void Kb::readNotify(QString line){
             }
         } else if(components[2] == "hwdpi"){
             // DPI settings
-            if(!_hwProfile || _hwProfile->modeCount() <= mode)
+            if(!_hwProfile || _hwProfile->modeCount() <= mode || mode >= HWMODE_MAX || !hwLoading[mode + 1])
                 return;
             KbPerf* perf = _hwProfile->modes()[mode]->perf();
             // Read the rest of the line as stage:x,y
@@ -552,36 +590,47 @@ void Kb::readNotify(QString line){
                     continue;
                 QStringList xy = dpi[1].split(',');
                 int x, y;
-                if(xy.length() < 2)
+                bool off = false;
+                if(xy.length() < 2){
                     // If the right side only has one parameter, set both X and Y
-                    x = y = xy[0].toInt();
-                else {
+                    if(xy[0] == "off")
+                        off = true;
+                    else
+                        x = y = xy[0].toInt();
+                } else {
                     x = xy[0].toInt();
                     y = xy[1].toInt();
                 }
                 // Set DPI for this stage
-                perf->dpi(dpi[0].toInt(), QPoint(x, y));
+                int index = dpi[0].toInt();
+                if(off)
+                    perf->dpiEnabled(index, false);
+                else {
+                    perf->dpiEnabled(index, true);
+                    perf->dpi(index, QPoint(x, y));
+                }
             }
         } else if(components[2] == "hwdpisel"){
             // Hardware DPI selection (0...5)
-            if(!_hwProfile || _hwProfile->modeCount() <= mode)
+            if(!_hwProfile || _hwProfile->modeCount() <= mode || mode >= HWMODE_MAX || !hwLoading[mode + 1])
                 return;
             KbPerf* perf = _hwProfile->modes()[mode]->perf();
             perf->curDpiIdx(components[3].toInt());
         } else if(components[2] == "hwlift"){
             // Mouse lift height (1...5)
-            if(!_hwProfile || _hwProfile->modeCount() <= mode)
+            if(!_hwProfile || _hwProfile->modeCount() <= mode || mode >= HWMODE_MAX || !hwLoading[mode + 1])
                 return;
             KbPerf* perf = _hwProfile->modes()[mode]->perf();
             perf->liftHeight((KbPerf::height)components[3].toInt());
         } else if(components[3] == "hwsnap"){
             // Mouse angle snapping ("on" or "off")
-            if(!_hwProfile || _hwProfile->modeCount() <= mode)
+            if(!_hwProfile || _hwProfile->modeCount() <= mode || mode >= HWMODE_MAX || !hwLoading[mode + 1])
                 return;
             KbPerf* perf = _hwProfile->modes()[mode]->perf();
             perf->angleSnap(components[3] == "on");
         }
     } else if(components[0] == "fwupdate"){
+        // Firmware update progress
         if(components.count() < 3)
             return;
         // Make sure path is the same

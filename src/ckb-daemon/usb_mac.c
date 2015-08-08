@@ -17,12 +17,12 @@ int os_usbsend(usbdevice* kb, const uchar* out_msg, int is_recv, const char* fil
     IOHIDReportType type = (kb->fwversion >= 0x120 && !is_recv ? kIOHIDReportTypeOutput : kIOHIDReportTypeFeature);
     kern_return_t res = (*kb->handle)->setReport(kb->handle, type, 0, out_msg, MSG_SIZE, 5000, 0, 0, 0);
     kb->lastresult = res;
-    if(IS_TEMP_FAILURE(res)){
-        ckb_warn_fn("Got return value 0x%x (continuing)\n", file, line, res);
-        return -1;
-    } else if(res != kIOReturnSuccess){
+    if(res != kIOReturnSuccess){
         ckb_err_fn("Got return value 0x%x\n", file, line, res);
-        return 0;
+        if(IS_TEMP_FAILURE(res))
+            return -1;
+        else
+            return 0;
     }
     return MSG_SIZE;
 }
@@ -31,12 +31,12 @@ int os_usbrecv(usbdevice* kb, uchar* in_msg, const char* file, int line){
     CFIndex length = MSG_SIZE;
     kern_return_t res = (*kb->handle)->getReport(kb->handle, kIOHIDReportTypeFeature, 0, in_msg, &length, 5000, 0, 0, 0);
     kb->lastresult = res;
-    if(IS_TEMP_FAILURE(res)){
-        ckb_warn_fn("Got return value 0x%x (continuing)\n", file, line, res);
-        return -1;
-    } else if(res != kIOReturnSuccess){
+    if(res != kIOReturnSuccess){
         ckb_err_fn("Got return value 0x%x\n", file, line, res);
-        return 0;
+        if(IS_TEMP_FAILURE(res))
+            return -1;
+        else
+            return 0;
     }
     if(length != MSG_SIZE)
         ckb_err_fn("Read %d bytes (expected %d)\n", file, line, (int)length, MSG_SIZE);
@@ -355,7 +355,7 @@ static void iterate_devices(void* context, io_iterator_t iterator){
 
 int usbmain(){
     int vendor = V_CORSAIR;
-    int products[] = { P_K65, P_K70, P_K70_NRGB, P_K95, P_K95_NRGB/*, P_M65*/ };
+    int products[] = { P_K65, P_K70, P_K70_NRGB, P_K95, P_K95_NRGB, P_M65 };
     // Tell IOService which type of devices we want (IOHIDDevices matching the supported vendor/products)
     CFMutableDictionaryRef match = IOServiceMatching(kIOHIDDeviceKey);
     CFNumberRef cfvendor = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &vendor);

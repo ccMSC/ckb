@@ -11,17 +11,18 @@ Hash: SHA256
 # Vendor  Model  FW   URL                                             Min.ckb File Name         SHA256
   Corsair K70RGB 1.20 http://www3.corsair.com/software/HID/K70RGB.zip 0.1.6   K70RGB_app130.bin e4ec7852d0457e3eeea794f2a278228c3eb3e26de03973960afa453698968cf5
   Corsair K95RGB 1.20 http://www3.corsair.com/software/HID/K95RGB.zip 0.1.6   K95RGB_app130.bin 192d3ca125cb560dce2a764b9e29491875d5073c34b0845de48e805a27de3699
+  Corsair M65RGB 1.19 http://www3.corsair.com/software/HID/M65RGB.zip 0.2.0   M65RGB_app119.bin be214ab1f0cc1fc7f785c926c117ef270597f80d1fad9133a730022834267f4f
 
 !END FW ENTRIES
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBCAAGBQJVuXuoAAoJEBXtkzSNyNMJm+wIAIGk24ITzfqpb1lVrXdujOGs
-Uy5j7hqroB6lCLDiOP+Fug3pKPB8gqoiYpK4qzL8EBtAGpHNUv/oqa7JfMhEZ5pJ
-j9rxavCF8RBmATypG+F3dbTl4VsU8H+aiI8prVqiioRBcbpT9p0YvsBgWln5wzbm
-Aixshi9luXPmgaid/+P1yKq5H+W23CoZOCBPIMNs48Cej+hm8cm9hO5REmh1FiL7
-jmP8+Dnqq8dDtPVPlH1w5p8U6KICz816BCVzHXmVgpasFQb2TFVnoYEOBq2RK3YA
-z8I9sRGjB6rlurmwScRfs8SKbClyobatgTJ2Yf4LvTBFA6XVvSTAnqQhwsjtGrw=
-=tOM2
+iQEcBAEBCAAGBQJVuXwHAAoJEBXtkzSNyNMJQqMH/jbCIXNYTzFIFIAlmDJbHPAB
+VWCeCKEiSVKlBz2jlmaoJ342rSO6nfuQgpmDQl+Buqop2MpFhHDzpa72t/NB7r0T
+XK5OXlrcMQWIN/YymmOBeKKE0ZIt1URfBE5b8AUgXqfDGmuoPWIG+Gieqp0fAn4w
+RX1/oTMdJQEGv3G+vrLlvsfIz+NQrdqOXYffitAdRUjsBf5I6sfZslUl/GupipvB
+DaMAYoEljOrzNTdtfInVpd+dVGMCKZhohlpsCzQ/Mi/UPwlgck07CD8jx47Wd/RH
+mvabnjVV2pUJDPUwM9lH6SNOU1DvHT6M78+i6gIlytICaYWecPtOuRrlLzlaf18=
+=LSGm
 -----END PGP SIGNATURE-----

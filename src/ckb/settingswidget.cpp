@@ -23,6 +23,14 @@ SettingsWidget::SettingsWidget(QWidget *parent) :
     ui->setupUi(this);
     CkbSettings settings("Program");
 
+    // Read keyboard layout
+    KeyMap::Layout layout = KeyMap::getLayout(settings.value("KbdLayout").toString());
+    if(layout == KeyMap::NO_LAYOUT)
+        // If the layout couldn't be read, try to auto-detect it from the system locale
+        layout = KeyMap::locale();
+    Kb::layout(layout);
+    ui->layoutBox->setCurrentIndex((int)layout);
+
     // Load modifier remap
     KbBind::loadGlobalRemap();
     if(modKeys.isEmpty()){
@@ -83,6 +91,11 @@ SettingsWidget::SettingsWidget(QWidget *parent) :
     // Set checkbox value (-1 = don't share)
     ui->brightnessBox->setChecked(dimming == -1);
 
+    // Read dither
+    bool dither = settings.value("Dither").toBool();
+    Kb::dither(dither);
+    ui->ditherBox->setChecked(dither);
+
     // Read auto update settings
     ui->autoFWBox->setChecked(!settings.value("DisableAutoFWCheck").toBool());
 
@@ -110,7 +123,7 @@ int SettingsWidget::frameRate() const {
 void SettingsWidget::pollUpdates(){
     // Check for changes to shared brightness setting
     int dimming = KbLight::shareDimming();
-    if(dimming != lastSharedDimming){
+    if(dimming != lastSharedDimming && !CkbSettings::isBusy()){
         CkbSettings::set("Program/GlobalBrightness", dimming);
         lastSharedDimming = dimming;
     }
@@ -210,7 +223,7 @@ void SettingsWidget::on_autoFWBox_clicked(bool checked){
 
 void SettingsWidget::on_trayBox_clicked(bool checked){
     CkbSettings::set("Program/SuppressTrayIcon", !checked);
-    MainWindow::mainWindow->trayIcon->setVisible(checked);
+    MainWindow::mainWindow->toggleTrayIcon(checked);
 }
 
 void SettingsWidget::on_loginItemBox_clicked(bool checked){
@@ -218,4 +231,15 @@ void SettingsWidget::on_loginItemBox_clicked(bool checked){
         AutoRun::enable();
     else
         AutoRun::disable();
+}
+
+void SettingsWidget::on_layoutBox_currentIndexChanged(int index){
+    KeyMap::Layout layout = (KeyMap::Layout)index;
+    CkbSettings::set("Program/KbdLayout", KeyMap::getLayout(layout));
+    Kb::layout(layout);
+}
+
+void SettingsWidget::on_ditherBox_clicked(bool checked){
+    CkbSettings::set("Program/Dither", checked);
+    Kb::dither(checked);
 }

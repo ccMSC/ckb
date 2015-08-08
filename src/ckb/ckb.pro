@@ -35,6 +35,15 @@ DEFINES += CKB_VERSION_STR="\\\"$$CKB_VERSION_STR\\\""
 LIBS += -lz
 DEFINES += QUAZIP_STATIC
 
+# Conditionally use libappindicator to support Unity indicators
+linux {
+system(pkg-config --exists appindicator-0.1) {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += appindicator-0.1
+    DEFINES += USE_LIBAPPINDICATOR
+}
+}
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     kbwidget.cpp \
@@ -79,7 +88,10 @@ SOURCES += main.cpp\
     fwupgradedialog.cpp \
     autorun.cpp \
     ckbsettings.cpp \
-    kbperf.cpp
+    kbperf.cpp \
+    ckbsettingswriter.cpp \
+    keyaction.cpp \
+    mperfwidget.cpp
 
 HEADERS  += mainwindow.h \
     kbwidget.h \
@@ -128,7 +140,10 @@ HEADERS  += mainwindow.h \
     fwupgradedialog.h \
     autorun.h \
     ckbsettings.h \
-    kbperf.h
+    kbperf.h \
+    ckbsettingswriter.h \
+    keyaction.h \
+    mperfwidget.h
 
 FORMS    += mainwindow.ui \
     kbwidget.ui \
@@ -142,7 +157,8 @@ FORMS    += mainwindow.ui \
     kbbindwidget.ui \
     rebindwidget.ui \
     modeselectdialog.ui \
-    fwupgradedialog.ui
+    fwupgradedialog.ui \
+    mperfwidget.ui
 
 RESOURCES += \
     image.qrc \

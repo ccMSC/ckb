@@ -29,7 +29,7 @@ int getfwversion(usbdevice* kb){
         poll = -1;
         kb->features &= ~FEAT_POLLRATE;
     }
-    // Print a warning if the vendor or product isn't what it should be
+    // Print a warning if the message didn't match the expected data
     if(vendor != kb->vendor)
         ckb_warn("Got vendor ID %04x (expected %04x)\n", vendor, kb->vendor);
     if(product != kb->product)
@@ -40,13 +40,15 @@ int getfwversion(usbdevice* kb){
         kb->fwversion = 0;
         kb->pollrate = -1;
     } else {
+        if(version != kb->fwversion && kb->fwversion != 0)
+            ckb_warn("Got firmware version %04x (expected %04x)\n", version, kb->fwversion);
         kb->fwversion = version;
         kb->pollrate = poll;
     }
     return 0;
 }
 
-#define FW_MAXSIZE  (128 * 1024 - 256)
+#define FW_MAXSIZE  (255 * 256)
 
 // Updates the device's firmware with the specified file. Returns one of the FW_ constants.
 // Lock the keyboard's main mutex before calling this and unlock it when done.
@@ -58,8 +60,8 @@ int fwupdate(usbdevice* kb, const char* path, int nnumber){
         ckb_err("Failed to open firmware file %s: %s\n", path, strerror(errno));
         return FW_NOFILE;
     }
-    ssize_t length = read(fd, fwdata, FW_MAXSIZE);
-    if(length <= 0x108 || length >= FW_MAXSIZE){
+    ssize_t length = read(fd, fwdata, FW_MAXSIZE + 1);
+    if(length <= 0x108 || length > FW_MAXSIZE){
         ckb_err("Failed to read firmware file %s: %s\n", path, length <= 0 ? strerror(errno) : "Wrong size");
         close(fd);
         return FW_NOFILE;
@@ -78,6 +80,8 @@ int fwupdate(usbdevice* kb, const char* path, int nnumber){
     }
     ckb_info("Loading firmware version %04x from %s\n", version, path);
     nprintf(kb, nnumber, 0, "fwupdate %s 0/%d\n", path, (int)length);
+    // Force the device to 10ms delay (we need to deliver packets very slowly to make sure it doesn't get overwhelmed)
+    kb->usbdelay = 10;
     // Send the firmware messages (256 bytes at a time)
     uchar data_pkt[7][MSG_SIZE] = {
         { 0x07, 0x0c, 0xf0, 0x01, 0 },

@@ -15,10 +15,12 @@ static const char* const cmd_strings[CMD_COUNT - 1] = {
     "notifyon",
     "notifyoff",
     "fps",
+    "dither",
 
     "hwload",
     "hwsave",
     "fwupdate",
+    "pollrate",
 
     "active",
     "idle",
@@ -170,6 +172,14 @@ int readcmd(usbdevice* kb, const char* line){
             }
             continue;
         }
+        case DITHER: {
+            // 0: No dither, 1: Ordered dither.
+            uint dither;
+            if(sscanf(word, "%u", &dither) == 1 && dither <= 1){
+                kb->dither = dither;
+            }
+            continue;
+        }
         default:;
         }
 
@@ -185,10 +195,12 @@ int readcmd(usbdevice* kb, const char* line){
             TRY_WITH_RESET(vt->idle(kb, mode, notifynumber, 0, 0));
             continue;
         case SWITCH:
-            profile->currentmode = mode;
-            // Set mode light for non-RGB K95
-            int index = INDEX_OF(mode, profile->mode);
-            vt->setmodeindex(kb, index);
+            if(profile->currentmode != mode){
+                profile->currentmode = mode;
+                // Set mode light for non-RGB K95
+                int index = INDEX_OF(mode, profile->mode);
+                vt->setmodeindex(kb, index);
+            }
             continue;
         case HWLOAD: case HWSAVE:
             // Try to load/save the hardware profile. Reset on failure, disconnect if reset fails.
@@ -203,6 +215,12 @@ int readcmd(usbdevice* kb, const char* line){
                 return 1;
             }
             continue;
+        case POLLRATE: {
+            uint rate;
+            if(sscanf(word, "%u", &rate) == 1 && (rate == 1 || rate == 2 || rate == 4 || rate == 8))
+                TRY_WITH_RESET(vt->pollrate(kb, mode, notifynumber, rate, 0));
+            continue;
+        }
         case ERASEPROFILE:
             // Erase the current profile
             vt->eraseprofile(kb, mode, notifynumber, 0, 0);

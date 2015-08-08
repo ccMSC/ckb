@@ -2,10 +2,12 @@
 #include "kbfirmware.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <cstdlib>
 #include <QSharedMemory>
 #include <QShortcut>
 #include <QMessageBox>
 #include <QMenuBar>
+#include <unistd.h>
 
 extern QSharedMemory appShare;
 
@@ -24,6 +26,22 @@ QString devpath = "/var/run/ckb%1";
 QTimer* eventTimer = 0;
 MainWindow* MainWindow::mainWindow = 0;
 
+#ifdef USE_LIBAPPINDICATOR
+extern "C" {
+    void quitIndicator(GtkMenu* menu, gpointer data) {
+        Q_UNUSED(menu);
+        MainWindow* window = static_cast<MainWindow*>(data);
+        window->quitApp();
+    }
+
+    void restoreIndicator(GtkMenu* menu, gpointer data) {
+        Q_UNUSED(menu);
+        MainWindow* window = static_cast<MainWindow*>(data);
+        window->showWindow();
+    }
+}
+#endif // USE_LIBAPPINDICATOR
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -31,15 +49,47 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     mainWindow = this;
 
-    trayIconMenu = new QMenu(this);
     restoreAction = new QAction(tr("Restore"), this);
     closeAction = new QAction(tr("Quit ckb"), this);
-    trayIconMenu->addAction(restoreAction);
-    trayIconMenu->addAction(closeAction);
-    trayIcon = new QSystemTrayIcon(QIcon(":/img/ckb-logo.png"), this);
-    trayIcon->setContextMenu(trayIconMenu);
-    if(!CkbSettings::get("Program/SuppressTrayIcon").toBool())
-        trayIcon->show();
+
+#ifdef USE_LIBAPPINDICATOR
+    QString desktop = std::getenv("XDG_CURRENT_DESKTOP");
+    unityDesktop = (desktop.toLower() == "unity");
+
+    if(unityDesktop){
+        trayIcon = 0;
+
+        indicatorMenu = gtk_menu_new();
+        indicatorMenuRestoreItem = gtk_menu_item_new_with_label("Restore");
+        indicatorMenuQuitItem = gtk_menu_item_new_with_label("Quit ckb");
+
+        gtk_menu_shell_append(GTK_MENU_SHELL(indicatorMenu), indicatorMenuRestoreItem);
+        gtk_menu_shell_append(GTK_MENU_SHELL(indicatorMenu), indicatorMenuQuitItem);
+
+        g_signal_connect(indicatorMenuQuitItem, "activate",
+            G_CALLBACK(quitIndicator), this);
+        g_signal_connect(indicatorMenuRestoreItem, "activate",
+            G_CALLBACK(restoreIndicator), this);
+
+        gtk_widget_show(indicatorMenuRestoreItem);
+        gtk_widget_show(indicatorMenuQuitItem);
+
+        indicator = app_indicator_new("ckb", "indicator-messages", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+
+        app_indicator_set_status(indicator, APP_INDICATOR_STATUS_ACTIVE);
+        app_indicator_set_menu(indicator, GTK_MENU(indicatorMenu));
+        app_indicator_set_icon(indicator, "ckb");
+    } else
+#endif // USE_LIBAPPINDICATOR
+    {
+        trayIconMenu = new QMenu(this);
+        trayIconMenu->addAction(restoreAction);
+        trayIconMenu->addAction(closeAction);
+        trayIcon = new QSystemTrayIcon(QIcon(":/img/ckb-logo.png"), this);
+        trayIcon->setContextMenu(trayIconMenu);
+        connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(iconClicked(QSystemTrayIcon::ActivationReason)));
+     }
+     toggleTrayIcon(!CkbSettings::get("Program/SuppressTrayIcon").toBool());
 
 #ifdef Q_OS_MACX
     // Make a custom "Close" menu action for OSX, as the default one brings up the "still running" popup unnecessarily
@@ -54,7 +104,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionExit, SIGNAL(triggered()), this, SLOT(quitApp()));
     connect(closeAction, SIGNAL(triggered()), this, SLOT(quitApp()));
     connect(restoreAction, SIGNAL(triggered()), this, SLOT(showWindow()));
-    connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(iconClicked(QSystemTrayIcon::ActivationReason)));
 
     connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(cleanup()));
 
@@ -63,13 +112,20 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(eventTimer, SIGNAL(timeout()), this, SLOT(timerTick()));
     eventTimer->start(1000 / 60);
 
-    QCoreApplication::setOrganizationName("ckb");
-
     ui->tabWidget->addTab(settingsWidget = new SettingsWidget(this), configLabel);
     settingsWidget->setVersion("ckb " CKB_VERSION_STR);
 
     ckbGuiVersion = PARSE_CKB_VERSION(CKB_VERSION_STR);
     scanKeyboards();
+}
+
+void MainWindow::toggleTrayIcon(bool visible) {
+#ifdef USE_LIBAPPINDICATOR
+    if(unityDesktop)
+        app_indicator_set_status(indicator, visible ? APP_INDICATOR_STATUS_ACTIVE : APP_INDICATOR_STATUS_PASSIVE);
+    else
+#endif // USE_LIBAPPINDICATOR
+        trayIcon->setVisible(visible);
 }
 
 void MainWindow::scanKeyboards(){
@@ -206,14 +262,29 @@ void MainWindow::closeEvent(QCloseEvent *event){
 }
 
 void MainWindow::timerTick(){
-    // Check if another instance requested this in the foreground
+    // Check shared memory for changes
     if(appShare.lock()){
         void* data = appShare.data();
-        if((QString)QByteArray((const char*)data) == "Open")
-            showWindow();
-        // Remove the request
-        *(char*)data = 0;
+        QStringList commands = QString((const char*)data).split("\n");
+        // Restore PID, remove all other data
+        snprintf((char*)appShare.data(), appShare.size(), "PID %ld", (long)getpid());
         appShare.unlock();
+        // Parse commands
+        foreach(const QString& line, commands){
+            // Old ckb option line - bring application to foreground
+            if(line == "Open")
+                showWindow();
+            if(line.startsWith("Option ")){
+                // New ckb option line
+                QString option = line.split(" ")[1];
+                if(option == "Open")
+                    // Bring to foreground
+                    showWindow();
+                else if(option == "Close")
+                    // Quit application
+                    qApp->quit();
+            }
+        }
     }
     // Check for firmware updates (when appropriate)
     if(!CkbSettings::get("Program/DisableAutoFWCheck").toBool())
@@ -251,6 +322,7 @@ void MainWindow::cleanup(){
     foreach(KbWidget* w, kbWidgets)
         delete w;
     kbWidgets.clear();
+    CkbSettings::cleanUp();
 }
 
 MainWindow::~MainWindow(){

@@ -133,22 +133,19 @@ typedef struct {
 // Device features
 #define FEAT_RGB        0x001   // RGB backlighting?
 #define FEAT_POLLRATE   0x002   // Known poll rate?
-#define FEAT_BIND       0x004   // Rebindable keys?
-#define FEAT_NOTIFY     0x008   // Key notifications?
-#define FEAT_FWVERSION  0x010   // Has firmware version?
-#define FEAT_FWUPDATE   0x020   // Has firmware update?
+#define FEAT_ADJRATE    0x004   // Adjustable poll rate?
+#define FEAT_BIND       0x008   // Rebindable keys?
+#define FEAT_NOTIFY     0x010   // Key notifications?
+#define FEAT_FWVERSION  0x020   // Has firmware version?
+#define FEAT_FWUPDATE   0x040   // Has firmware update?
+#define FEAT_HWLOAD     0x080   // Hardware load enabled?
 
-#define FEAT_ANSI       0x040   // ANSI/ISO layout toggle (Mac only - not needed on Linux)
-#define FEAT_ISO        0x080
-
-#ifdef OS_MAC
-#define FEAT_MOUSEACCEL 0x100   // Mouse acceleration (also Mac only)
-#else
-#define FEAT_MOUSEACCEL 0
-#endif
+#define FEAT_ANSI       0x100   // ANSI/ISO layout toggle (Mac only - not needed on Linux)
+#define FEAT_ISO        0x200
+#define FEAT_MOUSEACCEL 0x400   // Mouse acceleration (also Mac only)
 
 // Standard feature sets
-#define FEAT_COMMON     (FEAT_BIND | FEAT_NOTIFY | FEAT_FWVERSION | FEAT_MOUSEACCEL)
+#define FEAT_COMMON     (FEAT_BIND | FEAT_NOTIFY | FEAT_FWVERSION | FEAT_MOUSEACCEL | FEAT_HWLOAD)
 #define FEAT_STD_RGB    (FEAT_COMMON | FEAT_RGB | FEAT_POLLRATE | FEAT_FWUPDATE)
 #define FEAT_STD_NRGB   (FEAT_COMMON)
 #define FEAT_LMASK      (FEAT_ANSI | FEAT_ISO)
@@ -177,7 +174,7 @@ typedef struct {
     struct udev_device* udev;
     int handle;
     int uinput;
-    int event;
+    uchar ev_ileds;
 #else
     struct timespec keyrepeat;
     long location_id;
@@ -222,6 +219,8 @@ typedef struct {
     usbinput input;
     // Indicator LED state
     uchar ileds;
+    // Color dithering in use
+    char dither;
 } usbdevice;
 
 #endif  // STRUCTURES_H

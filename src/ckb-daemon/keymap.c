@@ -102,7 +102,7 @@ const key keymap[N_KEYS_EXTENDED] = {
     { "right",      0x8b, KEY_RIGHT },
     { "lock",       0x08, KEY_CORSAIR },
     { "mute",       0x14, KEY_MUTE },
-    { "stop",       0x20, KEY_STOP },
+    { "stop",       0x20, KEY_STOPCD },
     { "prev",       0x2c, KEY_PREVIOUSSONG },
     { "play",       0x38, KEY_PLAYPAUSE },
     { "next",       0x44, KEY_NEXTSONG },
@@ -164,16 +164,19 @@ const key keymap[N_KEYS_EXTENDED] = {
     { "f20",        -1, KEY_F20 },
 
     // Mouse buttons
-    { "mousel",     -1, SCAN_MOUSE | BTN_LEFT },
-    { "mouser",     -1, SCAN_MOUSE | BTN_RIGHT },
-    { "mousem",     -1, SCAN_MOUSE | BTN_MIDDLE },
-    { "mouses1",    -1, SCAN_MOUSE | BTN_SIDE },
-    { "mouses2",    -1, SCAN_MOUSE | BTN_EXTRA },
+    { "mouse1",     -1, SCAN_MOUSE | BTN_LEFT },
+    { "mouse2",     -1, SCAN_MOUSE | BTN_RIGHT },
+    { "mouse3",     -1, SCAN_MOUSE | BTN_MIDDLE },
+    { "mouse4",     -1, SCAN_MOUSE | BTN_SIDE },
+    { "mouse5",     -1, SCAN_MOUSE | BTN_EXTRA },
     { "dpiup",      -1, KEY_CORSAIR },
     { "dpidn",      -1, KEY_CORSAIR },
     { "sniper",     -1, KEY_CORSAIR },
     { "wheelup",    -1, SCAN_MOUSE | BTN_WHEELUP },
     { "wheeldn",    -1, SCAN_MOUSE | BTN_WHEELDOWN },
+    { "mouse6",     -1, SCAN_MOUSE | BTN_FORWARD },
+    { "mouse7",     -1, SCAN_MOUSE | BTN_BACK },
+    { "mouse8",     -1, SCAN_MOUSE | BTN_TASK },
 
     // RGB mouse zones
     { "front",      LED_MOUSE, KEY_NONE },
@@ -234,6 +237,7 @@ void hid_kb_translate(unsigned char* kbinput, int endpoint, int length, const un
                     ckb_warn("Got unknown key press %d on EP 1\n", urbinput[i]);
             }
         }
+        break;
     case -2:
         // EP 2 RGB: NKRO input
         if(urbinput[0] == 1){
@@ -324,6 +328,7 @@ void hid_kb_translate(unsigned char* kbinput, int endpoint, int length, const un
                     CLEAR_KEYBIT(kbinput, hid_codes[keybit]);
             }
         }
+        break;
     }
 }
 

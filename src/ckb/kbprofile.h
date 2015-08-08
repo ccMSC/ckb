@@ -17,11 +17,12 @@ public:
     // Construct empty profile with GUID/modification
     explicit KbProfile(Kb* parent, const KeyMap& keyMap, const QString& guid = "", const QString& modified = "");
     // Load profile from settings
-    explicit KbProfile(Kb* parent, const KeyMap& keyMap, QSettings& settings, const QString& guid);
+    explicit KbProfile(Kb* parent, const KeyMap& keyMap, CkbSettings& settings, const QString& guid);
 
     // Save profile to settings
-    void save(QSettings& settings);
+    void save(CkbSettings& settings);
     bool needsSave() const;
+    inline void setNeedsSave()          { _needsSave = true; }
 
     // Profile properties
     inline QString  name() const                    { return _name; }

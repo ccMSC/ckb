@@ -215,7 +215,7 @@ void KbLight::printRGB(QFile& cmd, const QHash<QString, QRgb>& animMap){
     }
 }
 
-void KbLight::frameUpdate(QFile& cmd, const QStringList& dimKeys){
+void KbLight::frameUpdate(QFile& cmd, const QStringList& dimKeys, const ColorMap& indicators){
     // Advance animations
     ColorMap animMap = _colorMap;
     quint64 timestamp = QDateTime::currentMSecsSinceEpoch();
@@ -237,23 +237,39 @@ void KbLight::frameUpdate(QFile& cmd, const QStringList& dimKeys){
         return;
     }
 
-    // Set brightness
+    // Set brightness and indicators
     float light = (3 - _dimming) / 3.f;
     float inactiveLight = (_inactive >= 0 ? (2 - _inactive) / 4.f : 1.f);
     if(light != 1.f || inactiveLight != 1.f){
         QMutableHashIterator<QString, QRgb> i(animMap);
         while(i.hasNext()){
             i.next();
+            const QString& key = i.key();
             QRgb& rgb = i.value();
             float r = qRed(rgb);
             float g = qGreen(rgb);
             float b = qBlue(rgb);
+            // Apply indicators
+            if(indicators.contains(key)){
+                const QRgb& rgb2 = indicators.value(key);
+                float r2 = qRed(rgb2);
+                float g2 = qGreen(rgb2);
+                float b2 = qBlue(rgb2);
+                float a2 = qAlpha(rgb2) / 255.f;
+                float a = 1.f;
+                float a3 = a2 + (1.f - a2) * a;
+                r = round((r2 * a2 + r * a * (1.f - a2)) / a3);
+                g = round((g2 * a2 + g * a * (1.f - a2)) / a3);
+                b = round((b2 * a2 + b * a * (1.f - a2)) / a3);
+            }
+            // Apply global dimming
             if(light != 1.f){
                 r *= light;
                 g *= light;
                 b *= light;
             }
-            if(inactiveLight != 1.f && dimKeys.contains(i.key())){
+            // Apply indicator dimming
+            if(inactiveLight != 1.f && dimKeys.contains(key)){
                 r *= inactiveLight;
                 g *= inactiveLight;
                 b *= inactiveLight;
@@ -283,10 +299,10 @@ void KbLight::base(QFile &cmd, bool ignoreDim){
     printRGB(cmd, animMap);
 }
 
-void KbLight::load(QSettings& settings){
+void KbLight::load(CkbSettings& settings){
     // Load light settings
     _needsSave = false;
-    QSGroup group(settings, "Lighting");
+    SGroup group(settings, "Lighting");
     KeyMap currentMap = _map;
     _map = KeyMap::fromName(settings.value("KeyMap").toString());
     _dimming = settings.value("Brightness").toUInt();
@@ -302,7 +318,7 @@ void KbLight::load(QSettings& settings){
     // Load RGB settings
     bool useReal = settings.value("UseRealNames").toBool();
     {
-        QSGroup group(settings, "Keys");
+        SGroup group(settings, "Keys");
         foreach(QString key, settings.childKeys()){
             QString name = key.toLower();
             if(!useReal)
@@ -318,7 +334,7 @@ void KbLight::load(QSettings& settings){
         anim->deleteLater();
     _animList.clear();
     {
-        QSGroup group(settings, "Animations");
+        SGroup group(settings, "Animations");
         foreach(QString anim, settings.value("List").toStringList()){
             QUuid id = anim;
             _animList.append(new KbAnim(this, _map, id, settings));
@@ -328,9 +344,9 @@ void KbLight::load(QSettings& settings){
     map(currentMap);
 }
 
-void KbLight::save(QSettings& settings){
+void KbLight::save(CkbSettings& settings){
     _needsSave = false;
-    QSGroup group(settings, "Lighting");
+    SGroup group(settings, "Lighting");
     settings.setValue("KeyMap", _map.name());
     settings.setValue("Brightness", _dimming);
     settings.setValue("InactiveIndicators", _inactive);
@@ -338,13 +354,13 @@ void KbLight::save(QSettings& settings){
     settings.setValue("UseRealNames", true);
     {
         // Save RGB settings
-        QSGroup group(settings, "Keys");
+        SGroup group(settings, "Keys");
         foreach(QString key, _colorMap.keys())
             settings.setValue(key, QColor(_colorMap.value(key)).name());
     }
     {
         // Save animations
-        QSGroup group(settings, "Animations");
+        SGroup group(settings, "Animations");
         QStringList aList;
         foreach(KbAnim* anim, _animList){
             aList << anim->guid().toString().toUpper();

@@ -10,7 +10,7 @@ static char kbsyspath[DEV_MAX][FILENAME_MAX];
 
 int os_usbsend(usbdevice* kb, const uchar* out_msg, int is_recv, const char* file, int line){
     int res;
-    if(kb->fwversion >= 0x120){
+    if(kb->fwversion >= 0x120 && !is_recv){
         struct usbdevfs_bulktransfer transfer;
         memset(&transfer, 0, sizeof(transfer));
         transfer.ep = (kb->fwversion >= 0x130) ? 4 : 3;
@@ -23,21 +23,20 @@ int os_usbsend(usbdevice* kb, const uchar* out_msg, int is_recv, const char* fil
         res = ioctl(kb->handle, USBDEVFS_CONTROL, &transfer);
     }
     if(res <= 0){
-        if(res == -1 && errno == ETIMEDOUT){
-            ckb_warn_fn("%s (continuing)\n", file, line, strerror(errno));
-            return -1;
-        }
         ckb_err_fn("%s\n", file, line, res ? strerror(errno) : "No data written");
-        return 0;
+        if(res == -1 && errno == ETIMEDOUT)
+            return -1;
+        else
+            return 0;
     } else if(res != MSG_SIZE)
         ckb_warn_fn("Wrote %d bytes (expected %d)\n", file, line, res, MSG_SIZE);
     return res;
 }
 
 int os_usbrecv(usbdevice* kb, uchar* in_msg, const char* file, int line){
-    DELAY_MEDIUM(kb);
     int res;
-    if(kb->fwversion >= 0x130){
+    // This is what CUE does, but it doesn't seem to work on linux.
+    /*if(kb->fwversion >= 0x130){
         struct usbdevfs_bulktransfer transfer;
         memset(&transfer, 0, sizeof(transfer));
         transfer.ep = 0x84;
@@ -45,17 +44,16 @@ int os_usbrecv(usbdevice* kb, uchar* in_msg, const char* file, int line){
         transfer.timeout = 5000;
         transfer.data = in_msg;
         res = ioctl(kb->handle, USBDEVFS_BULK, &transfer);
-    } else {
+    } else {*/
         struct usbdevfs_ctrltransfer transfer = { 0xa1, 0x01, 0x0300, 0x03, MSG_SIZE, 5000, in_msg };
         res = ioctl(kb->handle, USBDEVFS_CONTROL, &transfer);
-    }
+    //}
     if(res <= 0){
-        if(res == -1 && errno == ETIMEDOUT){
-            ckb_warn_fn("%s (continuing)\n", file, line, strerror(errno));
+        ckb_err_fn("%s\n", file, line, res ? strerror(errno) : "No data written");
+        if(res == -1 && errno == ETIMEDOUT)
             return -1;
-        }
-        ckb_err_fn("%s\n", file, line, res ? strerror(errno) : "No data read");
-        return 0;
+        else
+            return 0;
     } else if(res != MSG_SIZE)
         ckb_warn_fn("Read %d bytes (expected %d)\n", file, line, res, MSG_SIZE);
     return res;
@@ -81,7 +79,7 @@ void* os_inputmain(void* context){
     ckb_info("Starting input thread for %s%d\n", devpath, index);
 
     // Monitor input transfers on all endpoints
-    int urbcount = 3;
+    const int urbcount = 3;
     struct usbdevfs_urb urbs[urbcount];
     memset(urbs, 0, sizeof(urbs));
     urbs[0].buffer_length = 8;
@@ -91,7 +89,6 @@ void* os_inputmain(void* context){
         else
             urbs[1].buffer_length = 21;
         urbs[2].buffer_length = MSG_SIZE;
-        urbs[3].buffer_length = MSG_SIZE;
     } else {
         urbs[1].buffer_length = 4;
         urbs[2].buffer_length = 15;
@@ -224,15 +221,35 @@ int os_resetusb(usbdevice* kb, const char* file, int line){
     return 0;
 }
 
+void strtrim(char* string){
+    // Find last non-space
+    char* last = string;
+    for(char* c = string; *c != 0; c++){
+        if(!isspace(*c))
+            last = c;
+    }
+    last[1] = 0;
+    // Find first non-space
+    char* first = string;
+    for(; *first != 0; first++){
+        if(!isspace(*first))
+            break;
+    }
+    if(first != string)
+        memmove(string, first, last - first);
+}
+
 int os_setupusb(usbdevice* kb){
     // Copy device description and serial
     struct udev_device* dev = kb->udev;
     const char* name = udev_device_get_sysattr_value(dev, "product");
     if(name)
         strncpy(kb->name, name, KB_NAME_LEN);
+    strtrim(kb->name);
     const char* serial = udev_device_get_sysattr_value(dev, "serial");
     if(serial)
         strncpy(kb->serial, serial, SERIAL_LEN);
+    strtrim(kb->serial);
     // Copy firmware version (needed to determine USB protocol)
     const char* firmware = udev_device_get_sysattr_value(dev, "bcdDevice");
     if(firmware)
@@ -308,7 +325,7 @@ static _model models[] = {
     { P_K95_STR, P_K95 },
     { P_K95_NRGB_STR, P_K95_NRGB },
     // Mice
-    //{ P_M65_STR, P_M65 }
+    { P_M65_STR, P_M65 }
 };
 #define N_MODELS (sizeof(models) / sizeof(_model))
 

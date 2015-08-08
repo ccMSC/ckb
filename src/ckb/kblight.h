@@ -71,14 +71,15 @@ public:
     // Make the lighting idle, stopping any animations.
     void close();
 
-    // Write a new frame to the keyboard. Write "mode %d" first. Optionally provide a list of keys to show in a dimmed state.
-    void frameUpdate(QFile& cmd, const QStringList &dimKeys = QStringList());
+    // Write a new frame to the keyboard. Write "mode %d" first. Optionally provide a list of keys to show in a dimmed state and a list of keys to
+    // use as indicators. (note: indicator list and dim list should not overlap)
+    void frameUpdate(QFile& cmd, const QStringList &dimKeys = QStringList(), const ColorMap& indicators = ColorMap());
     // Write the mode's base colors without any animation
     void base(QFile& cmd, bool ignoreDim = false);
 
     // Load and save from stored settings
-    void load(QSettings& settings);
-    void save(QSettings& settings);
+    void load(CkbSettings& settings);
+    void save(CkbSettings& settings);
     bool needsSave() const;
 
 signals:
