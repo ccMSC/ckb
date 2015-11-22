@@ -1,0 +1,8 @@
+#!/bin/bash
+sudo systemctl stop ckb-daemon
+sudo rm -f /usr/lib/systemd/system/ckb-daemon.service
+sudo rm -f /usr/bin/ckb /usr/bin/ckb-daemon /usr/share/applications/ckb.desktop /usr/share/icons/hicolor/512x512/apps/ckb.png
+sudo rm -rf /usr/bin/ckb-animations
+make clean
+rm -fv Makefile Makefile.* */*/Makefile */*/Makefile.*
+exit 0
