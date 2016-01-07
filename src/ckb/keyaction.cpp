@@ -428,7 +428,6 @@ void KeyAction::keyEvent(KbBind* bind, bool down){
         // Do nothing, because all work is done by the keyboard itself.
         // For now, there is no reason to react on G-key press or release.
         // If u find some reason, then here is the place for it.
-        // qDebug ("keyEvent with Macro");
     }
 }
 
@@ -493,8 +492,6 @@ void KeyAction::adjustDisplay(){
 // ToDo: The input should be read from both text panes
 // and concatted.
 QString KeyAction::macroAction(QString macroDef) {
-    qDebug() << "______\n[" << macroDef << "]\n";
-    qDebug() << "Length of QString in pteMacroKeys = " << macroDef.length() << "\n";
     return QString ("$macro:%1").arg(macroDef);
 }
 

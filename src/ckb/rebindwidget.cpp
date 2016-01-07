@@ -360,7 +360,6 @@ void RebindWidget::applyChanges(const QStringList& keys, bool doUnbind){
         // Set the macro definiton for all keys selected (indeed, it may be multiple keys).
         // First, concat the Macro Key Definion and the Macro plain text
         // after escaping possible colos in the Macro Plain Text.
-        ui->pteMacroText->setPlainText("Das ist ein Beispieltext mit vielen Doppelpunkten < < >> ::: und einem &colon; zwischendrin haha, geht : doch! : ! :::");
         QString mac;
         mac = ui->pteMacroText->toPlainText().replace(":", "&das_IST_31N_col0n;");
         mac = ui->pteMacroBox->toPlainText() + ":" + mac;
@@ -673,14 +672,35 @@ void RebindWidget::on_animButton_clicked(bool checked){
 }
 
 
-void RebindWidget::on_btnStartMacro_clicked()
-{
-    if (!macReader)
-        macReader = new MacroReader;
+void RebindWidget::on_btnStartMacro_clicked() {
+    if (!macReader) {
+        bind->handleNotificationChannel(true);
+        macReader = new MacroReader(bind->getMacroNumber(), bind->getMacroPath(), ui->pteMacroBox, ui->pteMacroText);
+        // because of the second thread we need to disable three of the four bottom buttons.
+        // Clicking "Stop" will enable them again.
+        ui->applyButton->setEnabled(false);
+        ui->resetButton->setEnabled(false);
+        ui->unbindButton->setEnabled(false);
+    }
 }
 
-void RebindWidget::on_btnStopMacro_clicked()
-{
-    if (macReader) delete macReader;
-    macReader = 0;
+void RebindWidget::on_btnStopMacro_clicked() {
+    if (macReader) {
+        bind->handleNotificationChannel(false);
+        delete macReader;
+        macReader = 0;
+        convertMacroBox();
+        ui->applyButton->setEnabled(true);
+        ui->resetButton->setEnabled(true);
+        ui->unbindButton->setEnabled(true);
+    }
+}
+
+void RebindWidget::convertMacroBox() {
+    QString in;
+
+    in = ui->pteMacroBox->toPlainText();
+    in.replace (QRegExp("\n"), ",");
+    in.replace (QRegExp("key "), "");
+    ui->pteMacroBox->setPlainText(in);
 }
