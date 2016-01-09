@@ -25,6 +25,16 @@ function finish {
     exit $1
 }
 
+#Function to install packages using apt-get
+function installPackage {
+    if [[ -n $1 ]]; then
+        echo "Installing $1."
+        sudo apt-get install --assume-yes $1 > /dev/null
+        checkfail $?
+        echo "Done"
+    fi
+}
+
 # Directories
 cd "`dirname \"$0\"`"
 SRCDIR="src"
@@ -41,6 +51,29 @@ if [[ `pwd` == *" "* ]]; then
 fi
 
 if [[ -d $SRCDIR ]]; then
+    #Check if Distro is Ubuntu
+    if [[ "$OSTYPE" != "darwin"* ]]; then
+        if [[ -f "/usr/bin/lsb_release" ]]; then
+            UBUNTU=`lsb_release -d | grep -o "Ubuntu.*"`
+            if [[ $UBUNTU == "Ubuntu"* ]]; then
+                #Check if libappindicator-dev is installed
+                if [[ -z `dpkg-query --showformat='${Status}' -W libappindicator-dev 2>/dev/null | grep -o "install ok installed"` ]]; then
+                    #Force installation if the DE is Unity
+                    if [[ $XDG_CURRENT_DESKTOP == "Unity" ]]; then
+                        installPackage "libappindicator-dev"
+                    else
+                        #ask Ubuntu users with other DEs if they want libappindicator-dev
+                        echo "Your Operating System has been detected as $UBUNTU,"
+                        echo "but the current desktop environment appears to be $XDG_CURRENT_DESKTOP."
+                        echo "Some environments require libappindicator-dev in order to show a \"tray icon\"."
+                        read -rp "Would you like to install it [Y/n]? " doappindicator
+                        [[ ! $doappindicator =~ no? ]] && installPackage "libappindicator-dev"
+                    fi
+                fi  
+            fi
+        fi
+    fi
+
     echo "Preparing build files..."
     # Clean first
     make clean >/dev/null 2>&1
