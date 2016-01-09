@@ -58,17 +58,8 @@ if [[ -d $SRCDIR ]]; then
             if [[ $UBUNTU == "Ubuntu"* ]]; then
                 #Check if libappindicator-dev is installed
                 if [[ -z `dpkg-query --showformat='${Status}' -W libappindicator-dev 2>/dev/null | grep -o "install ok installed"` ]]; then
-                    #Force installation if the DE is Unity
-                    if [[ $XDG_CURRENT_DESKTOP == "Unity" ]]; then
-                        installPackage "libappindicator-dev"
-                    else
-                        #ask Ubuntu users with other DEs if they want libappindicator-dev
-                        echo "Your Operating System has been detected as $UBUNTU,"
-                        echo "but the current desktop environment appears to be $XDG_CURRENT_DESKTOP."
-                        echo "Some environments require libappindicator-dev in order to show a \"tray icon\"."
-                        read -rp "Would you like to install it [Y/n]? " doappindicator
-                        [[ ! $doappindicator =~ no? ]] && installPackage "libappindicator-dev"
-                    fi
+                    #Force installation on Unity
+                    [[ $XDG_CURRENT_DESKTOP == "Unity" ]] && installPackage "libappindicator-dev"
                 fi  
             fi
         fi
