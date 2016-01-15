@@ -18,11 +18,11 @@ bool Kb::_dither = false, Kb::_mouseAccel = true;
 
 Kb::Kb(QObject *parent, const QString& path) :
     QThread(parent), features("N/A"), firmware("N/A"), pollrate("N/A"), monochrome(false),
-    devpath(path), cmdpath(path + "/cmd"), notifyPath(path + "/notify1"),
+    devpath(path), cmdpath(path + "/cmd"), notifyPath(path + "/notify1"), macroPath(path + "/notify2"),
     _currentProfile(0), _currentMode(0), _model(KeyMap::NO_MODEL),
     lastAutoSave(QDateTime::currentMSecsSinceEpoch()),
     _hwProfile(0), prevProfile(0), prevMode(0),
-    cmd(cmdpath), notifyNumber(1), _needsSave(false)
+    cmd(cmdpath), notifyNumber(1), macroNumber(2), _needsSave(false)
 {
     memset(iState, 0, sizeof(iState));
     memset(hwLoading, 0, sizeof(hwLoading));
@@ -94,6 +94,21 @@ Kb::Kb(QObject *parent, const QString& path) :
     }
     cmd.write(QString("notifyon %1\n").arg(notifyNumber).toLatin1());
     cmd.flush();
+
+    // Again, find an available notification node for macro definition
+    // (if none is found, take notify2)
+    {
+        QMutexLocker locker(&notifyPathMutex);
+        for(int i = 1; i < 10; i++){
+            QString notify = QString(path + "/notify%1").arg(i);
+            if(!QFile::exists(notify) && !notifyPaths.contains(notify)){
+                macroNumber = i;
+                macroPath = notify;
+                break;
+            }
+        }
+        notifyPaths.insert(notifyPath); ///< \todo Is adding notify2 to the notifypaths neccessary?
+    }
     // Activate device, apply settings, and ask for hardware profile
     cmd.write(QString("fps %1\n").arg(_frameRate).toLatin1());
     cmd.write(QString("dither %1\n").arg(static_cast<int>(_dither)).toLatin1());
@@ -125,6 +140,12 @@ Kb::Kb(QObject *parent, const QString& path) :
 Kb::~Kb(){
     // Save settings first
     save();
+
+    // remove the notify channel from the list of notifyPaths.
+    ///< \todo I don't think, that notifypaths is used somewhere. So why do we have it?
+    /// If we do not need it, searching for an ununsed notify channel can easy be refactored to a private member function.
+    notifyPaths.remove(macroPath);
+
     // Kill notification thread and remove node
     activeDevices.remove(this);
     if(!isOpen()){
