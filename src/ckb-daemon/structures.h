@@ -232,6 +232,8 @@ typedef struct {
     uchar hw_ileds, ileds;
     // Color dithering in use
     char dither;
+    // Flag to check, if large macros should be sent delayed
+    char delay;
 } usbdevice;
 
 #endif  // STRUCTURES_H
