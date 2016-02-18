@@ -148,6 +148,14 @@ const key keymap[N_KEYS_EXTENDED] = {
     { "g16",        0x77, KEY_CORSAIR },
     { "g17",        0x83, KEY_CORSAIR },
     { "g18",        0x8f, KEY_CORSAIR },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { "fn",         0x65, KEY_FN },         // STRAFE Fn - rwin on other keyboards
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
 
     // Strafe specific side leds, that are set via a special command
     { "lsidel",      -2, KEY_CORSAIR },

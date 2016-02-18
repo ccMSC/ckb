@@ -177,6 +177,7 @@ void KbBind::update(QFile& cmd, bool force){
     if(!_bind.contains("rwin")) bind["rwin"] = 0;
     if(!_bind.contains("lalt")) bind["lalt"] = 0;
     if(!_bind.contains("ralt")) bind["ralt"] = 0;
+    if(!_bind.contains("fn")) bind["fn"] = 0;
     QHashIterator<QString, KeyAction*> i(bind);
 
     // Initialize String buffer for macro Key definitions (G-keys)

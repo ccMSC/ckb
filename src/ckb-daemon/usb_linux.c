@@ -70,11 +70,18 @@ int _nk95cmd(usbdevice* kb, uchar bRequest, ushort wValue, const char* file, int
         return 0;
     struct usbdevfs_ctrltransfer transfer = { 0x40, bRequest, wValue, 0, 0, 5000, 0 };
     int res = ioctl(kb->handle - 1, USBDEVFS_CONTROL, &transfer);
-    if(res < 0){
-        ckb_err_fn("%s\n", file, line, strerror(-res));
+    if(res <= 0){
+        ckb_err_fn("%s\n", file, line, res ? strerror(errno) : "No data written");
         return 1;
     }
     return 0;
+}
+
+void os_sendindicators(usbdevice* kb){
+    struct usbdevfs_ctrltransfer transfer = { 0x21, 0x09, 0x0200, 0x00, 1, 500, &kb->ileds };
+    int res = ioctl(kb->handle - 1, USBDEVFS_CONTROL, &transfer);
+    if(res <= 0)
+        ckb_err("%s\n", res ? strerror(errno) : "No data written");
 }
 
 void* os_inputmain(void* context){
@@ -194,9 +201,12 @@ int usbunclaim(usbdevice* kb, int resetting, int rgb){
 }
 
 void os_closeusb(usbdevice* kb){
-    usbunclaim(kb, 0, HAS_FEATURES(kb, FEAT_RGB));
-    close(kb->handle - 1);
-    udev_device_unref(kb->udev);
+    if(kb->handle){
+        usbunclaim(kb, 0, HAS_FEATURES(kb, FEAT_RGB));
+        close(kb->handle - 1);
+    }
+    if(kb->udev)
+        udev_device_unref(kb->udev);
     kb->handle = 0;
     kb->udev = 0;
     kbsyspath[INDEX_OF(kb, keyboard)][0] = 0;
