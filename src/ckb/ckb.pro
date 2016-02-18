@@ -100,6 +100,7 @@ SOURCES += main.cpp\
     layoutdialog.cpp \
     extrasettingswidget.cpp \
     kbmanager.cpp \
+    macroreader.cpp \
     colormap.cpp
 
 HEADERS  += mainwindow.h \
@@ -157,6 +158,7 @@ HEADERS  += mainwindow.h \
     layoutdialog.h \
     extrasettingswidget.h \
     kbmanager.h \
+    macroreader.h \
     colormap.h
 
 FORMS    += mainwindow.ui \
