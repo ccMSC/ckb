@@ -178,34 +178,34 @@ int main(int argc, char *argv[]){
 
     // Parse arguments
     switch (parseCommandLine(parser, &errorMessage)) {
-    case CommandLineOK:
-        // If launched with no argument
-        break;
-    case CommandLineError:
-        fputs(qPrintable(errorMessage), stderr);
-        fputs("\n\n", stderr);
-        fputs(qPrintable(parser.helpText()), stderr);
-        return 1;
-    case CommandLineVersionRequested:
-        // If launched with --version, print version info and then quit
-        printf("%s %s\n", qPrintable(QCoreApplication::applicationName()),
-               qPrintable(QCoreApplication::applicationVersion()));
-        return 0;
-    case CommandLineHelpRequested:
-        // If launched with --help, print help and then quit
-        parser.showHelp();
-        return 0;
-    case CommandLineClose:
-        // If launched with --close, kill existing app
-        if (isRunning("Close"))
-            printf("Asking existing instance to close.\n");
-        else
-            printf("ckb is not running.\n");
-        return 0;
-    case CommandLineBackground:
-        // If launched with --background, launch in background
-        background = 1;
-        break;
+        case CommandLineOK:
+            // If launched with no argument
+            break;
+        case CommandLineError:
+            fputs(qPrintable(errorMessage), stderr);
+            fputs("\n\n", stderr);
+            fputs(qPrintable(parser.helpText()), stderr);
+            return 1;
+        case CommandLineVersionRequested:
+            // If launched with --version, print version info and then quit
+            printf("%s %s\n", qPrintable(QCoreApplication::applicationName()),
+                    qPrintable(QCoreApplication::applicationVersion()));
+            return 0;
+        case CommandLineHelpRequested:
+            // If launched with --help, print help and then quit
+            parser.showHelp();
+            return 0;
+        case CommandLineClose:
+            // If launched with --close, kill existing app
+            if (isRunning("Close"))
+                printf("Asking existing instance to close.\n");
+            else
+                printf("ckb is not running.\n");
+            return 0;
+        case CommandLineBackground:
+            // If launched with --background, launch in background
+            background = 1;
+            break;
     }
 
 #ifdef Q_OS_LINUX
