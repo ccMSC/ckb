@@ -6,8 +6,11 @@
 #include "profile.h"
 #include "usb.h"
 
+//#define INIT_ERROR      // for debugging purposes. MacroClient sends invalid macro-clear cmd to mouse
+
 static const char* const cmd_strings[CMD_COUNT - 1] = {
     // NONE is implicit
+    "delay",
     "mode",
     "switch",
     "layout",
@@ -111,7 +114,7 @@ int readcmd(usbdevice* kb, const char* line){
 
         // Reject unrecognized commands. Reject bind or notify related commands if the keyboard doesn't have the feature enabled.
         if(command == NONE
-                || ((!HAS_FEATURES(kb, FEAT_BIND) && (command == BIND || command == UNBIND || command == REBIND || command == MACRO))
+                || ((!HAS_FEATURES(kb, FEAT_BIND) && (command == BIND || command == UNBIND || command == REBIND || command == MACRO || command == DELAY))
                            || (!HAS_FEATURES(kb, FEAT_NOTIFY) && command == NOTIFY))){
             next_loop:
             continue;
@@ -197,6 +200,9 @@ int readcmd(usbdevice* kb, const char* line){
             }
             continue;
         }
+        case DELAY:
+            kb->delay = (!strcmp (word, "on")); // independendant from parameter to handle false commands like "delay off"
+            continue;
         default:;
         }
 
@@ -268,6 +274,13 @@ int readcmd(usbdevice* kb, const char* line){
         } case MACRO:
             if(!strcmp(word, "clear")){
                 // Macro has a special clear command
+#ifdef INIT_ERROR
+                if(IS_MOUSE(kb->vendor, kb->product)) {
+                    fprintf (stderr, "Detected MACRO command for mouse. Ignored.\n");
+                    continue;
+                }
+                fprintf (stderr, "Detected MACRO command for keyboard. Handled.\n");
+#endif
                 vt->macro(kb, mode, notifynumber, 0, 0);
                 continue;
             }
@@ -285,7 +298,8 @@ int readcmd(usbdevice* kb, const char* line){
         // Macros and DPI have a separate left-side handler
         if(command == MACRO || command == DPI){
             word[left] = 0;
-            vt->do_macro[command](kb, mode, notifynumber, word, right);
+            if (vt->do_macro[command]) vt->do_macro[command](kb, mode, notifynumber, word, right);
+            else fprintf (stderr, "Got null-ptr in vt->do_cmd[MACRO]. Did you try to send a macro to mouse (maybe wrong cmd-pipe)?\n");
             continue;
         }
         // Scan the left side for key names and run the requested command
