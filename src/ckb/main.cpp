@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include "cli.h"
 
 QSharedMemory appShare("ckb");
 
@@ -27,7 +28,8 @@ enum CommandLineParseResults {
     CommandLineVersionRequested,
     CommandLineHelpRequested,
     CommandLineClose,
-    CommandLineBackground
+    CommandLineBackground,
+    CommandLineCommand
 };
 
 /**
@@ -55,6 +57,10 @@ CommandLineParseResults parseCommandLine(QCommandLineParser &parser, QString *er
     const QCommandLineOption closeOption(QStringList() << "c" << "close",
                                          "Causes already running instance (if any) to exit.");
     parser.addOption(closeOption);
+    // add -x, --cmd, --execute
+    const QCommandLineOption commandOption(QStringList() << "x" << "cmd" << "execute",
+                                           "Execute the given command without a GUI.");
+    parser.addOption(commandOption);
 
     /* parse arguments */
     if (!parser.parse(QCoreApplication::arguments())) {
@@ -82,6 +88,11 @@ CommandLineParseResults parseCommandLine(QCommandLineParser &parser, QString *er
     if (parser.isSet(closeOption)) {
         // close already running application instances, if any
         return CommandLineClose;
+    }
+
+    if (parser.isSet(commandOption)) {
+        // parse input and execute appropriate command
+        return CommandLineCommand;
     }
 
     /* no explicit argument was passed */
@@ -206,6 +217,9 @@ int main(int argc, char *argv[]){
             // If launched with --background, launch in background
             background = 1;
             break;
+        case CommandLineCommand:
+            // If launched with --cmd, try to execute given command
+            CommandLine::execute(QCoreApplication::arguments());
     }
 
 #ifdef Q_OS_LINUX
