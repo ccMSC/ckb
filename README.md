@@ -55,7 +55,8 @@ Linux Installation
 
 #### Pre-made packages:
 
-* Arch: [`aur/ckb-git`](https://aur.archlinux.org/packages/ckb-git/)
+* Arch: [`aur/ckb-git`](https://aur.archlinux.org/packages/ckb-git/) - out-of-date by 2 releases, uses `master` branch
+* Arch: [`aur/ckb-git-latest`](https://aur.archlinux.org/packages/ckb-git-latest/) - uses `fw2kb` branch, fixes unusable keyboards with latest Corsair firmware update
 * Gentoo: `emerge -av app-misc/ckb`
 
 These can be used to install ckb from your package manager. Note that I do not personally maintain these packages. For other distros, or if you want to create your own package, see instructions below.
