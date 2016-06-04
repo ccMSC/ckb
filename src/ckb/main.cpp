@@ -213,13 +213,14 @@ int main(int argc, char *argv[]){
             else
                 printf("ckb is not running.\n");
             return 0;
+        case CommandLineCommand:
+            // If launched with --cmd, try to execute given command
+            static int cli_error = CommandLine::execute(QCoreApplication::arguments());
+            // Also run ckb in background on execute command
         case CommandLineBackground:
             // If launched with --background, launch in background
             background = 1;
             break;
-        case CommandLineCommand:
-            // If launched with --cmd, try to execute given command
-            CommandLine::execute(QCoreApplication::arguments());
     }
 
 #ifdef Q_OS_LINUX
