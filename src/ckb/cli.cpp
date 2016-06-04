@@ -1,7 +1,7 @@
 #include "cli.h"
 
 
-void CommandLine::execute(QStringList args) {
+int CommandLine::execute(QStringList args) {
     QStringList::const_iterator constIterator;
 
     // TODO: delegate accumulated commands to own handler, where command is executed
@@ -13,5 +13,5 @@ void CommandLine::execute(QStringList args) {
         fprintf(stdout, "%03d: %s\n", index++, qPrintable((*constIterator).toLocal8Bit().constData()));
     }
 
-    return;
+    return CommandLineOK;
 }

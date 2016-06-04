@@ -217,6 +217,10 @@ int main(int argc, char *argv[]){
             // If launched with --cmd, try to execute given command
             static int cli_error = CommandLine::execute(QCoreApplication::arguments());
             // Also run ckb in background on execute command
+            if (cli_error) {
+                parser.showHelp();
+                return cli_error;
+            }
         case CommandLineBackground:
             // If launched with --background, launch in background
             background = 1;

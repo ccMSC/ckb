@@ -8,7 +8,10 @@ class CommandLine : public QObject
 {
     Q_OBJECT
 public:
-    static void execute(QStringList args);
+    enum CommandLineResult {
+        CommandLineOK
+    };
+    static int execute(QStringList args);
 };
 
 #endif // CKB_CLI_H
