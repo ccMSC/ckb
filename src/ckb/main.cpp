@@ -170,6 +170,7 @@ int main(int argc, char *argv[]){
     QString errorMessage;
     parser.setApplicationDescription("Open Source Corsair Input Device Driver for Linux and OSX.");
     bool background = 0;
+    bool isCmd = 0;
 
     // Although the daemon runs as root, the GUI needn't and shouldn't be, as it has the potential to corrupt settings data.
     if(getuid() == 0){
@@ -216,11 +217,13 @@ int main(int argc, char *argv[]){
         case CommandLineCommand:
             // If launched with --cmd, try to execute given command
             static int cli_error = CommandLine::execute(QCoreApplication::arguments());
-            // Also run ckb in background on execute command
             if (cli_error) {
+                // display help text and errors, if command couldn't be executed
                 parser.showHelp();
                 return cli_error;
             }
+            // Also run ckb in background on execute command
+            isCmd = 1;
         case CommandLineBackground:
             // If launched with --background, launch in background
             background = 1;
@@ -235,7 +238,7 @@ int main(int argc, char *argv[]){
 #endif
 
     if(isRunning(background ? 0 : "Open")){
-        printf("ckb is already running. Exiting.\n");
+        if (!isCmd) printf("ckb is already running. Exiting.\n");
         return 0;
     }
     MainWindow w;
