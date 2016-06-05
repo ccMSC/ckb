@@ -233,7 +233,8 @@ Generally the command line interface needs a different approach, than the GUI. F
              | "set" <key> <key-def>
              | "copy" <mode-name>
              | "reset"
-             | "macro" <macro-definition>
+             | "set-macro" <macro-definition>
+             | "list-macros"
 
 <key-def> ::= <modifier-list><key-list>
 <modifier-list> ::= ""
