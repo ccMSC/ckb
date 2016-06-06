@@ -7,7 +7,13 @@
 class CommandLine : public QObject
 {
     Q_OBJECT
+private:
+    int run();
 public:
+    QString base;
+    QString flag;
+    QStringList commands;
+
     enum CommandLineResult {
         CommandLineOK
     };
