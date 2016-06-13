@@ -42,6 +42,9 @@ class CommandLine : public QObject
 {
     Q_OBJECT
 private:
+    int cmdOffset;
+
+    int runGlobal();
     int run();
 public:
     QString base;
@@ -49,9 +52,12 @@ public:
     QStringList commands;
 
     enum CommandLineResult {
-        CommandLineOK
+        CommandLineOK,
+        CommandLineUnknown
     };
     static int execute(QStringList args);
+
+    friend class Command;
 };
 
 #endif // CKB_CLI_H

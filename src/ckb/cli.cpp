@@ -58,17 +58,55 @@ int Command::resolveCommand(QString cmd) {
     return CommandUnknown;
 }
 
+int CommandLine::runGlobal() {
+    if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+    switch (Command::resolveCommand(commands[cmdOffset++].toLocal8Bit().data())) {
+    case Command::CommandInfo:
+        std::cout << "  Print Global Info" << std::endl;
+        break;
+    case Command::CommandLayout:
+        if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+
+        // further specify the layout command
+        QString task = commands[cmdOffset++].toLocal8Bit().data();
+        if (task.compare("list") == 0) {
+            std::cout << "  Print Global Layouts" << std::endl;
+        }
+        else if (task.compare("set") == 0) {
+            if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+            QString layout = commands[cmdOffset++].toLocal8Bit().data();
+            std::cout << "  Set Global Layout to " << layout.toLocal8Bit().data() << std::endl;
+        }
+        else {
+            return Command::CommandUnknown;
+        }
+        break;
+    }
+
+    return Command::CommandOK;
+}
+
 /**
  * run - Run specified Commands.
  */
 int CommandLine::run() {
-    // TODO: parse commands and execute requested operation
-    printf("BaseCommand: %s\n", base.toLocal8Bit().data());
-    printf("Flag       : %s\n", flag.toLocal8Bit().data());
-    printf("Arguments  :\n");
+    cmdOffset = 0;
 
-    for (int i = 0; i < commands.length(); i++) {
-        printf("    (%03d) %s\n", i, commands[i].toLocal8Bit().data());
+    // parse commands and execute requested operation
+    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+    switch (Command::resolveCommand(commands[cmdOffset++].toLocal8Bit().data())) {
+    case Command::CommandGlobal:
+        std::cout << "Global: " << std::endl;
+        return runGlobal();
+        break;
+    case Command::CommandDevice:
+        std::cout << "Device:" << std::endl;
+        break;
+    case Command::CommandProfile:
+        std::cout << "Profile:" << std::endl;
+        break;
+    default:
+        return CommandLineUnknown;
     }
 
     // return with appropriate status
