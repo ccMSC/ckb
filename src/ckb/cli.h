@@ -4,6 +4,40 @@
 /* Include Section */
 #include <QObject>
 
+
+class Command : public QObject
+{
+    Q_OBJECT
+public:
+    enum CommandType {
+        // Top Level Commands
+        CommandGlobal,
+        CommandDevice,
+        CommandProfile,
+
+        // Sub-commands
+        CommandHelp,
+        CommandInfo,
+        CommandLayout,
+        CommandModifier,
+        CommandFramerate,
+        CommandAnimationDir,
+        CommandBrightnessPerMode,
+        CommandSpatialDithering,
+        CommandFirmwareAutocheck,
+        CommandTrayIcon,
+        CommandMouseAcceleration,
+        CommandScrollAcceleration,
+        CommandScrollAccelerationSpeed,
+
+        // Generic OK/Fail Flags
+        CommandOK,
+        CommandUnknown
+    };
+    static int resolveCommand(QString cmd);
+};
+
+
 class CommandLine : public QObject
 {
     Q_OBJECT

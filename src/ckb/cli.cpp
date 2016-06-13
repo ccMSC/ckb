@@ -2,6 +2,61 @@
 #include <iostream>
 #include <string>
 
+/**
+ * resolveCommand - Resolve the given String to a Command identifier.
+ */
+int Command::resolveCommand(QString cmd) {
+    if (cmd.compare("global") == 0) {
+        return CommandGlobal;
+    }
+    else if (cmd.compare("device") == 0) {
+        return CommandDevice;
+    }
+    else if (cmd.compare("profile") == 0) {
+        return CommandProfile;
+    }
+    else if (cmd.compare("help") == 0) {
+        return CommandHelp;
+    }
+    else if (cmd.compare("info") == 0) {
+        return CommandInfo;
+    }
+    else if (cmd.compare("layout") == 0) {
+        return CommandLayout;
+    }
+    else if (cmd.compare("modifier") == 0) {
+        return CommandModifier;
+    }
+    else if (cmd.compare("framerate") == 0) {
+        return CommandFramerate;
+    }
+    else if (cmd.compare("animation-dir") == 0) {
+        return CommandAnimationDir;
+    }
+    else if (cmd.compare("brightness-per-mode") == 0) {
+        return CommandBrightnessPerMode;
+    }
+    else if (cmd.compare("spatial-dithering") == 0) {
+        return CommandSpatialDithering;
+    }
+    else if (cmd.compare("firmware-autocheck") == 0) {
+        return CommandFirmwareAutocheck;
+    }
+    else if (cmd.compare("tray-icon") == 0) {
+        return CommandTrayIcon;
+    }
+    else if (cmd.compare("mouse-acceleration") == 0) {
+        return CommandMouseAcceleration;
+    }
+    else if (cmd.compare("scroll-acceleration") == 0) {
+        return CommandScrollAcceleration;
+    }
+    else if (cmd.compare("scroll-acceleration-speed") == 0) {
+        return CommandScrollAccelerationSpeed;
+    }
+
+    return CommandUnknown;
+}
 
 /**
  * run - Run specified Commands.
