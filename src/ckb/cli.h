@@ -3,6 +3,7 @@
 
 /* Include Section */
 #include <QObject>
+#include <keymap.h>
 
 
 class Command : public QObject
@@ -34,7 +35,9 @@ public:
         CommandOK,
         CommandUnknown
     };
+
     static int resolveCommand(QString cmd);
+    static KeyMap::Layout resolveLayout(QString layout);
 };
 
 
