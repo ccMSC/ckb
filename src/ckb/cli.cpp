@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "ckbsettings.h"
 #include "keymap.h"
 #include "kbmanager.h"
 #include <string>
@@ -33,39 +34,96 @@ int CommandLine::runGlobal() {
     if (cmdOffset >= commands.length()) return Command::CommandUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandInfo:
-        // TODO: the next section is almost verbosely taken from `MainWindow::updateVersion()`
-        //       Outsource one of these routines and use it for both frontends.
-        QString daemonVersion = KbManager::ckbDaemonVersion();
-        QString deviceLabel;
-        if(daemonVersion == DAEMON_UNAVAILABLE_STR){
-            deviceLabel = "Driver inactive";
-        }
-        else {
-            int count = KbManager::devices().count();
-            // Warn if the daemon version doesn't match the GUI
-            QString daemonWarning;
-            if(daemonVersion != CKB_VERSION_STR)
-                daemonWarning = "\n\nWarning: Driver version mismatch (" + daemonVersion + "). Please upgrade ckb" + QString(KbManager::ckbDaemonVersionF() > KbManager::ckbGuiVersionF() ? "" : "-daemon") + ". If the problem persists, try rebooting.";
-            if(count == 0)
-                deviceLabel = "No devices connected" + daemonWarning;
-            else if(count == 1)
-                deviceLabel = "1 device connected" + daemonWarning;
-            else
-                deviceLabel = QString("%1 devices connected").arg(count) + daemonWarning;
-        }
+        {
+            // TODO: the next section is almost verbosely taken from `MainWindow::updateVersion()`
+            //       Outsource one of these routines and use it for both frontends.
+            QString daemonVersion = KbManager::ckbDaemonVersion();
+            QString deviceLabel;
+            if(daemonVersion == DAEMON_UNAVAILABLE_STR){
+                deviceLabel = "Driver inactive";
+            }
+            else {
+                int count = KbManager::devices().count();
+                // Warn if the daemon version doesn't match the GUI
+                QString daemonWarning;
+                if(daemonVersion != CKB_VERSION_STR)
+                    daemonWarning = "\n\nWarning: Driver version mismatch (" + daemonVersion + "). Please upgrade ckb" + QString(KbManager::ckbDaemonVersionF() > KbManager::ckbGuiVersionF() ? "" : "-daemon") + ". If the problem persists, try rebooting.";
+                if(count == 0)
+                    deviceLabel = "No devices connected" + daemonWarning;
+                else if(count == 1)
+                    deviceLabel = "1 device connected" + daemonWarning;
+                else
+                    deviceLabel = QString("%1 devices connected").arg(count) + daemonWarning;
+            }
 
-        qOut()
-            << "ckb " << CKB_VERSION_STR
-            << endl
-            << "Open Source Corsair Input Device Driver for Linux and OSX."
-            << endl << endl
-            << deviceLabel
-            << endl << endl
-            << "See https://github.com/ccMSC/ckb"
-            << endl
-            << QString::fromUtf8("©") << " 2014-2016. Licensed under GPLv2."
-            << endl;
-        break;
+            qOut()
+                << "ckb " << CKB_VERSION_STR
+                << endl
+                << "Open Source Corsair Input Device Driver for Linux and OSX."
+                << endl << endl
+                << deviceLabel
+                << endl << endl
+                << "See https://github.com/ccMSC/ckb"
+                << endl
+                << QString::fromUtf8("©") << " 2014-2016. Licensed under GPLv2."
+                << endl;
+            break;
+        }
+    case Command::CommandLayout:
+        {
+            if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+
+            // further specify the layout command
+            QString task = commands[cmdOffset++];
+            if (task.compare("list") == 0) {
+                // get currently set layout and available layouts
+                KeyMap::Layout layout = KeyMap::getLayout(settings.value("Program/KbdLayout").toString());
+                QStringList layoutNames = KeyMap::layoutNames();
+
+                // iterate through available layouts
+                for (int layoutIndex = 0; layoutIndex < layoutNames.count(); layoutIndex++) {
+                    // print out all available keyboard layouts
+                    KeyMap::Layout currentLayout = KeyMap::Layout(layoutIndex);
+                    qOut()
+                        << qSetFieldWidth(0) << left << ((layout == currentLayout) ? "[x]" : "[ ]") << " "
+                        << qSetFieldWidth(9) << left << KeyMap::getLayout(currentLayout).toUpper() << " | "
+                        << qSetFieldWidth(0) << left << layoutNames[layoutIndex]
+                        << endl;
+                }
+            }
+            else if (task.compare("set") == 0) {
+                // get next argument to set as the new layout
+                if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+                KeyMap::Layout kl = KeyMap::getLayout(commands[cmdOffset++]);
+
+                // if layout is invalid, abort
+                if (kl == KeyMap::NO_LAYOUT) {
+                    qOut()
+                        << "Could not set layout."
+                        << endl;
+
+                    return CommandLineUnknown;
+                }
+                else {
+                    // persistently save new layout
+                    settings.set("Program/KbdLayout", KeyMap::getLayout(kl));
+                    Kb::layout(kl);
+
+                    // wait until, settings are written completely
+                    settings.cleanUp();
+
+                    qOut()
+                        << "New layout is " << KeyMap::layoutNames()[(int)Kb::layout()] << "."
+                        << endl;
+                }
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
+    default:
+        return CommandLineUnknown;
     }
 
     return CommandLineOK;
@@ -103,6 +161,7 @@ int CommandLine::run() {
  * @param args  QStringList of arguments to parse.
  */
 int CommandLine::execute(QStringList args) {
+    CkbSettings settings("Program");
     KbManager::init(CKB_VERSION_STR);
     KbManager::kbManager()->scanKeyboards();
     QStringList::const_iterator constIterator;

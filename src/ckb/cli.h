@@ -4,7 +4,7 @@
 /* Include Section */
 #include <QObject>
 #include <QTextStream>
-#include <keymap.h>
+#include "ckbsettings.h"
 
 
 class Command : public QObject
@@ -45,6 +45,7 @@ class CommandLine : public QObject
 {
     Q_OBJECT
 private:
+    CkbSettings settings;
     int cmdOffset;
 
     int runGlobal();
