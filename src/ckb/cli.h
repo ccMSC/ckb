@@ -37,7 +37,6 @@ public:
     };
 
     static int resolveCommand(QString cmd);
-    static KeyMap::Layout resolveLayout(QString layout);
 };
 
 

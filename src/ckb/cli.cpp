@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "keymap.h"
 #include <string>
 #include <QDebug>
 
@@ -27,24 +28,6 @@ int Command::resolveCommand(QString cmd) {
     return Command::CommandUnknown;
 }
 
-KeyMap::Layout resolveLayout(QString layout) {
-    if (layout.compare("EU") == 0) return KeyMap::EU;
-    else if (layout.compare("EU_DVORAK") == 0) return KeyMap::EU_DVORAK;
-    else if (layout.compare("GB") == 0) return KeyMap::GB;
-    else if (layout.compare("GB_DVORAK") == 0) return KeyMap::GB_DVORAK;
-    else if (layout.compare("US") == 0) return KeyMap::US;
-    else if (layout.compare("US_DVORAK") == 0) return KeyMap::US_DVORAK;
-    else if (layout.compare("FR") == 0) return KeyMap::FR;
-    else if (layout.compare("DE") == 0) return KeyMap::DE;
-    else if (layout.compare("IT") == 0) return KeyMap::IT;
-    else if (layout.compare("PL") == 0) return KeyMap::PL;
-    else if (layout.compare("MX") == 0) return KeyMap::MX;
-    else if (layout.compare("ES") == 0) return KeyMap::ES;
-    else if (layout.compare("SE") == 0) return KeyMap::SE;
-
-    return KeyMap::NO_LAYOUT;
-}
-
 int CommandLine::runGlobal() {
     if (cmdOffset >= commands.length()) return Command::CommandUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
@@ -61,7 +44,7 @@ int CommandLine::runGlobal() {
         }
         else if (task.compare("set") == 0) {
             if (cmdOffset >= commands.length()) return Command::CommandUnknown;
-            KeyMap::Layout kl = resolveLayout(commands[cmdOffset++]);
+            KeyMap::Layout kl = KeyMap::getLayout(commands[cmdOffset++]);
             qDebug() << "  Set Global Layout: " << (int) kl;
         }
         else {
