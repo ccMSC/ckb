@@ -6,22 +6,23 @@
  * resolveCommand - Resolve the given String to a Command identifier.
  */
 int Command::resolveCommand(QString cmd) {
-    if (cmd.compare("global") == 0) return Command::CommandGlobal;
-    else if (cmd.compare("device") == 0) return Command::CommandDevice;
-    else if (cmd.compare("profile") == 0) return Command::CommandProfile;
-    else if (cmd.compare("help") == 0) return Command::CommandHelp;
-    else if (cmd.compare("info") == 0) return Command::CommandInfo;
-    else if (cmd.compare("layout") == 0) return Command::CommandLayout;
-    else if (cmd.compare("modifier") == 0) return Command::CommandModifier;
-    else if (cmd.compare("framerate") == 0) return Command::CommandFramerate;
-    else if (cmd.compare("animation-dir") == 0) return Command::CommandAnimationDir;
-    else if (cmd.compare("brightness-per-mode") == 0) return Command::CommandBrightnessPerMode;
-    else if (cmd.compare("spatial-dithering") == 0) return Command::CommandSpatialDithering;
-    else if (cmd.compare("firmware-autocheck") == 0) return Command::CommandFirmwareAutocheck;
-    else if (cmd.compare("tray-icon") == 0) return Command::CommandTrayIcon;
-    else if (cmd.compare("mouse-acceleration") == 0) return Command::CommandMouseAcceleration;
-    else if (cmd.compare("scroll-acceleration") == 0) return Command::CommandScrollAcceleration;
-    else if (cmd.compare("scroll-acceleration-speed") == 0) return Command::CommandScrollAccelerationSpeed;
+    QString lowerCmd = cmd.toLower();
+    if (lowerCmd.compare("global") == 0) return Command::CommandGlobal;
+    else if (lowerCmd.compare("device") == 0) return Command::CommandDevice;
+    else if (lowerCmd.compare("profile") == 0) return Command::CommandProfile;
+    else if (lowerCmd.compare("help") == 0) return Command::CommandHelp;
+    else if (lowerCmd.compare("info") == 0) return Command::CommandInfo;
+    else if (lowerCmd.compare("layout") == 0) return Command::CommandLayout;
+    else if (lowerCmd.compare("modifier") == 0) return Command::CommandModifier;
+    else if (lowerCmd.compare("framerate") == 0) return Command::CommandFramerate;
+    else if (lowerCmd.compare("animation-dir") == 0) return Command::CommandAnimationDir;
+    else if (lowerCmd.compare("brightness-per-mode") == 0) return Command::CommandBrightnessPerMode;
+    else if (lowerCmd.compare("spatial-dithering") == 0) return Command::CommandSpatialDithering;
+    else if (lowerCmd.compare("firmware-autocheck") == 0) return Command::CommandFirmwareAutocheck;
+    else if (lowerCmd.compare("tray-icon") == 0) return Command::CommandTrayIcon;
+    else if (lowerCmd.compare("mouse-acceleration") == 0) return Command::CommandMouseAcceleration;
+    else if (lowerCmd.compare("scroll-acceleration") == 0) return Command::CommandScrollAcceleration;
+    else if (lowerCmd.compare("scroll-acceleration-speed") == 0) return Command::CommandScrollAccelerationSpeed;
 
     return Command::CommandUnknown;
 }
