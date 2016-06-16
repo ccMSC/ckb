@@ -3,6 +3,7 @@
 
 /* Include Section */
 #include <QObject>
+#include <QTextStream>
 #include <keymap.h>
 
 
@@ -58,6 +59,8 @@ public:
         CommandLineUnknown
     };
     static int execute(QStringList args);
+    /** static stdout stream to print text similar to qDebug() */
+    inline QTextStream& qOut() { static QTextStream s{stdout}; return s; }
 
     friend class Command;
 };
