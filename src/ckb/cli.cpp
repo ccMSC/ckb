@@ -1,6 +1,6 @@
 #include "cli.h"
-#include <iostream>
 #include <string>
+#include <QDebug>
 
 /**
  * resolveCommand - Resolve the given String to a Command identifier.
@@ -48,7 +48,7 @@ int CommandLine::runGlobal() {
     if (cmdOffset >= commands.length()) return Command::CommandUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandInfo:
-        std::cout << "  Print Global Info" << std::endl;
+        qDebug() << "  Print Global Info";
         break;
     case Command::CommandLayout:
         if (cmdOffset >= commands.length()) return Command::CommandUnknown;
@@ -56,12 +56,12 @@ int CommandLine::runGlobal() {
         // further specify the layout command
         QString task = commands[cmdOffset++];
         if (task.compare("list") == 0) {
-            std::cout << "  Print Global Layouts" << std::endl;
+            qDebug() << "  Print Global Layouts";
         }
         else if (task.compare("set") == 0) {
             if (cmdOffset >= commands.length()) return Command::CommandUnknown;
             KeyMap::Layout kl = resolveLayout(commands[cmdOffset++]);
-            std::cout << "  Set Global Layout: " << (int) kl << std::endl;
+            qDebug() << "  Set Global Layout: " << (int) kl;
         }
         else {
             return CommandLineUnknown;
@@ -82,13 +82,13 @@ int CommandLine::run() {
     if (cmdOffset >= commands.length()) return CommandLineUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandGlobal:
-        std::cout << "Global: " << std::endl;
+        qDebug() << "Global: ";
         return runGlobal();
     case Command::CommandDevice:
-        std::cout << "Device:" << std::endl;
+        qDebug() << "Device:";
         break;
     case Command::CommandProfile:
-        std::cout << "Profile:" << std::endl;
+        qDebug() << "Profile:";
         break;
     default:
         return CommandLineUnknown;
