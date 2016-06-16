@@ -1,5 +1,6 @@
 #include "cli.h"
 #include "keymap.h"
+#include "kbmanager.h"
 #include <string>
 #include <QDebug>
 
@@ -32,24 +33,38 @@ int CommandLine::runGlobal() {
     if (cmdOffset >= commands.length()) return Command::CommandUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandInfo:
-        qDebug() << "  Print Global Info";
-        break;
-    case Command::CommandLayout:
-        if (cmdOffset >= commands.length()) return Command::CommandUnknown;
-
-        // further specify the layout command
-        QString task = commands[cmdOffset++];
-        if (task.compare("list") == 0) {
-            qDebug() << "  Print Global Layouts";
-        }
-        else if (task.compare("set") == 0) {
-            if (cmdOffset >= commands.length()) return Command::CommandUnknown;
-            KeyMap::Layout kl = KeyMap::getLayout(commands[cmdOffset++]);
-            qDebug() << "  Set Global Layout: " << (int) kl;
+        // TODO: the next section is almost verbosely taken from `MainWindow::updateVersion()`
+        //       Outsource one of these routines and use it for both frontends.
+        QString daemonVersion = KbManager::ckbDaemonVersion();
+        QString deviceLabel;
+        if(daemonVersion == DAEMON_UNAVAILABLE_STR){
+            deviceLabel = "Driver inactive";
         }
         else {
-            return CommandLineUnknown;
+            int count = KbManager::devices().count();
+            // Warn if the daemon version doesn't match the GUI
+            QString daemonWarning;
+            if(daemonVersion != CKB_VERSION_STR)
+                daemonWarning = "\n\nWarning: Driver version mismatch (" + daemonVersion + "). Please upgrade ckb" + QString(KbManager::ckbDaemonVersionF() > KbManager::ckbGuiVersionF() ? "" : "-daemon") + ". If the problem persists, try rebooting.";
+            if(count == 0)
+                deviceLabel = "No devices connected" + daemonWarning;
+            else if(count == 1)
+                deviceLabel = "1 device connected" + daemonWarning;
+            else
+                deviceLabel = QString("%1 devices connected").arg(count) + daemonWarning;
         }
+
+        qOut()
+            << "ckb " << CKB_VERSION_STR
+            << endl
+            << "Open Source Corsair Input Device Driver for Linux and OSX."
+            << endl << endl
+            << deviceLabel
+            << endl << endl
+            << "See https://github.com/ccMSC/ckb"
+            << endl
+            << QString::fromUtf8("©") << " 2014-2016. Licensed under GPLv2."
+            << endl;
         break;
     }
 
@@ -66,7 +81,6 @@ int CommandLine::run() {
     if (cmdOffset >= commands.length()) return CommandLineUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandGlobal:
-        qDebug() << "Global: ";
         return runGlobal();
     case Command::CommandDevice:
         qDebug() << "Device:";
@@ -89,6 +103,8 @@ int CommandLine::run() {
  * @param args  QStringList of arguments to parse.
  */
 int CommandLine::execute(QStringList args) {
+    KbManager::init(CKB_VERSION_STR);
+    KbManager::kbManager()->scanKeyboards();
     QStringList::const_iterator constIterator;
     CommandLine cli;
 
