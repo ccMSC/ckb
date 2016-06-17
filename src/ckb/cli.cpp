@@ -413,7 +413,7 @@ int CommandLine::runGlobal() {
                     << "Use spatial dithering to simulate extra color resolution: "
                     << (settings.value("Program/Dither").toBool() ? "Enabled" : "Disabled") << "."
                     << endl
-                    << "(May improve appearance on some keyboards)."
+                    << "(May improve appearance on some keyboards.)"
                     << endl;
             }
             else if (task.compare("enable") == 0) {
@@ -426,6 +426,49 @@ int CommandLine::runGlobal() {
                 // disable spatial dithering
                 settings.set("Program/Dither", false);
                 Kb::dither(false);
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
+    case Command::CommandFirmwareAutocheck:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+
+            // coerce "set" to "disable"/"enable" if possible
+            if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                task = commands[cmdOffset].toLower();
+                if (task.compare("on") == 0 || task.compare("1") == 0)
+                    task = "enable";
+                else if (task.compare("off") == 0 || task.compare("0") == 0)
+                    task = "disable";
+                else
+                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            }
+
+            if (task.compare("show") == 0) {
+                // display information about firmware auto check
+                qOut()
+                    << "Check for new firmware automatically: "
+                    << (settings.value("Program/DisableAutoFWCheck").toBool() ? "Disabled" : "Enabled") << "."
+                    << endl
+                    << "(You will be notified when new firmware versions are available. You'll have the option to install them immediately or wait until later.)"
+                    << endl;
+            }
+            else if (task.compare("enable") == 0) {
+                // enable firmware autocheck
+                settings.set("Program/DisableAutoFWCheck", false);
+                settings.cleanUp();
+            }
+            else if (task.compare("disable") == 0) {
+                // disable firmware autocheck
+                settings.set("Program/DisableAutoFWCheck", true);
                 settings.cleanUp();
             }
             else {
