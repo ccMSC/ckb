@@ -565,6 +565,51 @@ int CommandLine::runGlobal() {
             }
             break;
         }
+    case Command::CommandScrollAcceleration:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+
+            // coerce "set" to "disable"/"enable" if possible
+            if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                task = commands[cmdOffset].toLower();
+                if (task.compare("on") == 0 || task.compare("1") == 0)
+                    task = "enable";
+                else if (task.compare("off") == 0 || task.compare("0") == 0)
+                    task = "disable";
+                else
+                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            }
+
+            if (task.compare("show") == 0) {
+                // display information about scroll acceleration
+                qOut()
+                    << "Scroll acceleration: "
+                    << (settings.value("Program/DisableScrollAccel").toBool() ? "Disabled" : "Enabled") << "."
+                    << endl
+                    << "(Try this if you're having problems with the scroll wheel.)"
+                    << endl;
+            }
+            else if (task.compare("enable") == 0) {
+                // suppress scroll acceleration
+                settings.set("Program/DisableScrollAccel", false);
+                Kb::scrollSpeed(settings.value("Program/ScrollSpeed", 3).toInt());
+                settings.cleanUp();
+            }
+            else if (task.compare("disable") == 0) {
+                // allow scroll acceleration
+                settings.set("Program/DisableScrollAccel", true);
+                Kb::scrollSpeed(0);
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
 #endif
     default:
         return CommandLineUnknown;
