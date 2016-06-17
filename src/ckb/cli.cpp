@@ -2,6 +2,7 @@
 #include "ckbsettings.h"
 #include "keymap.h"
 #include "kbmanager.h"
+#include "kbbind.h"
 #include <string>
 #include <QDebug>
 
@@ -120,6 +121,138 @@ int CommandLine::runGlobal() {
             else {
                 return CommandLineUnknown;
             }
+            break;
+        }
+    case Command::CommandModifier:
+        {
+            // load the global remaps from the ckbsettings
+            KbBind::loadGlobalRemap();
+
+            // set the modifier keys and names to display
+            QStringList modKeys, modNames;
+            modKeys << "caps" << "lshift" << "lctrl" << "lalt" << "lwin";
+#ifdef Q_OS_MACX
+            modNames << "Caps Lock" << "Shift" << "Control (⌃)" << "Option (⌥)" << "Command (⌘)";
+#else
+            modNames << "Caps Lock" << "Shift" << "Control" << "Alt" << "Super";
+#endif
+
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            QString task = commands[cmdOffset++].toLower();
+            if (task.compare("list") == 0) {
+                // print each modifier and it's rebind
+                qOut()
+                    << "These will override the keyboard profile. See \"Binding\" tab for more settings."
+                    << endl;
+
+                foreach (QString mod, modKeys) {
+                    qOut()
+                        << qSetFieldWidth(11) << left << modNames[modKeys.indexOf(mod)]
+                        << qSetFieldWidth(2)  << left << ": "
+                        << qSetFieldWidth(0)  << left << modNames[modKeys.indexOf(KbBind::globalRemap(mod))]
+                        << endl;
+                }
+            }
+            else if (task.compare("set") == 0) {
+                // abort if arguments don't contain key and remap
+                if (cmdOffset+1 >= commands.length()) return CommandLineUnknown;
+
+                // get key and remap from arguments
+                QString key = commands[cmdOffset++].toLower();
+                QString mod = commands[cmdOffset++].toLower();
+                QString lmod, rmod;
+
+                // strip leading 'r' or 'l'
+                mod = mod[0] == QChar('l') || mod[0] == QChar('r') ? mod.mid(1) : mod;
+
+                // abort if remap not in list
+                if ((QStringList() << "caps" << "shift" << "ctrl" << "alt" << "option" << "win" << "cmd").indexOf(mod) == -1)
+                    return CommandLineUnknown;
+
+                // initialize newMods
+                QHash<QString, QString> newMods;
+                newMods["caps"] = KbBind::globalRemap("caps");
+                newMods["lshift"] = KbBind::globalRemap("lshift");
+                newMods["rshift"] = KbBind::globalRemap("rshift");
+                newMods["lctrl"] = KbBind::globalRemap("lctrl");
+                newMods["rctrl"] = KbBind::globalRemap("rctrl");
+                newMods["lalt"] = KbBind::globalRemap("lalt");
+                newMods["ralt"] = KbBind::globalRemap("ralt");
+                newMods["lwin"] = KbBind::globalRemap("lwin");
+                newMods["rwin"] = KbBind::globalRemap("rwin");
+
+                // coerce remaps to understandable format
+                if (mod == "caps") {
+                    lmod = rmod = mod;
+                }
+                else if (mod == "option") {
+                    lmod = "lalt";
+                    rmod = "ralt";
+                }
+                else if (mod == "cmd") {
+                    lmod = "lwin";
+                    rmod = "rwin";
+                }
+                else {
+                    lmod = 'l' + mod;
+                    rmod = 'r' + mod;
+                }
+
+                // remap requested key to new mod
+                if (key.compare("caps") == 0) {
+                    newMods["caps"] = lmod;
+                }
+                else if (key.compare("shift") == 0) {
+                    newMods["lshift"] = lmod;
+                    newMods["rshift"] = rmod;
+                }
+                else if (key.compare("ctrl") == 0) {
+                    newMods["lctrl"] = lmod;
+                    newMods["rctrl"] = rmod;
+                }
+                else if (key.compare("alt") == 0 || key.compare("option") == 0) {
+                    newMods["lalt"] = lmod;
+                    newMods["ralt"] = rmod;
+                }
+                else if (key.compare("win") == 0 || key.compare("cmd") == 0) {
+                    newMods["lwin"] = lmod;
+                    newMods["rwin"] = rmod;
+                }
+                else {
+                    return CommandLineUnknown;
+                }
+
+                // persistently store new remaps
+                KbBind::setGlobalRemap(newMods);
+                KbBind::saveGlobalRemap();
+
+                // wait until settings are written completely
+                settings.cleanUp();
+            }
+            else if (task.compare("reset") == 0) {
+                // initialize newMods
+                QHash<QString, QString> newMods;
+                newMods["caps"] = "caps";
+                newMods["lshift"] = "lshift";
+                newMods["rshift"] = "rshift";
+                newMods["lctrl"] = "lctrl";
+                newMods["rctrl"] = "rctrl";
+                newMods["lalt"] = "lalt";
+                newMods["ralt"] = "ralt";
+                newMods["lwin"] = "lwin";
+                newMods["rwin"] = "rwin";
+
+                // persistently store new remaps
+                KbBind::setGlobalRemap(newMods);
+                KbBind::saveGlobalRemap();
+
+                // wait until settings are written completely
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+
             break;
         }
     default:
