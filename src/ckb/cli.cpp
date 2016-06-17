@@ -4,6 +4,7 @@
 #include "keymap.h"
 #include "kbmanager.h"
 #include "kbbind.h"
+#include "kblight.h"
 #include <string>
 #include <QDebug>
 
@@ -329,6 +330,58 @@ int CommandLine::runGlobal() {
                     break;
                 }
                 qOut() << endl;
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
+    case Command::CommandBrightnessPerMode:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+
+            // coerce "set" to "disable"/"enable" if possible
+            if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                task = commands[cmdOffset].toLower();
+                if (task.compare("on") == 0 || task.compare("1") == 0)
+                    task = "enable";
+                else if (task.compare("off") == 0 || task.compare("0") == 0)
+                    task = "disable";
+                else
+                    return CommandLineUnknown;
+            }
+
+            if (task.compare("show") == 0) {
+                // get current dimming from settings
+                int dimming = settings.value("Program/GlobalBrightness").toInt();
+                if (dimming < -1 || dimming > KbLight::MAX_DIM) {
+                    // normalize dimming, if value is malformed
+                    dimming = 0;
+                }
+
+                // display information about brightness per mode
+                qOut()
+                    << "Brightness per mode: "
+                    << (dimming == -1 ? "Enabled" : "Disabled") << "."
+                    << endl
+                    << "(By default, the same brightness level will be applied to all profiles and all devices. Enable this to store it with the lighting mode instead.)"
+                    << endl;
+            }
+            else if (task.compare("enable") == 0) {
+                // enable brightness per mode -> disable shared dimming
+                settings.set("Program/GlobalBrightness", -1);
+                KbLight::shareDimming(-1);
+                settings.cleanUp();
+            }
+            else if (task.compare("disable") == 0) {
+                // disable brightness per mode -> enable shared dimming
+                settings.set("Program/GlobalBrightness", 0);
+                KbLight::shareDimming(0);
+                settings.cleanUp();
             }
             else {
                 return CommandLineUnknown;
