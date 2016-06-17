@@ -255,6 +255,52 @@ int CommandLine::runGlobal() {
 
             break;
         }
+    case Command::CommandFramerate:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+            if (task.compare("show") == 0) {
+                // display current framerate
+                qOut()
+                    << "Current framerate: "
+                    << settings.value("Program/framerate").toString()
+                    << endl;
+            }
+            else if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                // get given framerate
+                bool ok;
+                QString frameRate = commands[cmdOffset++].toLower();
+                int frameRateValue = frameRate.toInt(&ok);
+
+                // check, whether it's a number between 0 and 60
+                if (!ok || frameRateValue <= 0 || frameRateValue >= 60) {
+                    qOut()
+                        << "Framerate must be a number between 0 and 60."
+                        << endl;
+                    return CommandLineUnknown;
+                }
+
+                // persistently store framerate and set it for current session
+                Kb::frameRate(frameRateValue);
+                settings.set("Program/framerate", frameRateValue);
+
+                // print warning, if value above 30
+                if (frameRateValue > 30)
+                    qOut()
+                        << "Warning: high frame rates may cause stability issues."
+                        << endl;
+
+                // wait until settings are written completely
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
     default:
         return CommandLineUnknown;
     }
