@@ -610,6 +610,51 @@ int CommandLine::runGlobal() {
             }
             break;
         }
+    case Command::CommandScrollAccelerationSpeed:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+            bool scrollDisabled = settings.value("Program/DisableScrollAccel");
+
+            if (task.compare("show") == 0) {
+                // display information about scroll acceleration speed
+                qOut()
+                    << "Scroll acceleration value: "
+                    << settings.value("Program/ScrollSpeed").toInt() << "."
+                    << endl;
+                if (scrollDisabled) {
+                    qOut()
+                        << "Attention: Scroll Acceleration is disabled. It must be enabled for the Scroll Acceleration to be set to a specific value."
+                        << endl;
+                    break;
+            }
+            else if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                // get given scroll speed
+                bool ok;
+                QString scrollSpeed = commands[cmdOffset++].toLower();
+                int scrollSpeedValue = scrollSpeed.toInt(&ok);
+
+                // check, whether it's a number between 0 and 10
+                if (!ok || scrollSpeedValue < 1 || scrollSpeedValue > 10) {
+                    qOut()
+                        << "Scroll speed must be a number between 1 and 10."
+                        << endl;
+                    return CommandLineUnknown;
+                }
+
+                // set scroll acceleration speed (if enabled)
+                settings.set("Program/ScrollSpeed", scrollSpeedValue);
+                Kb::scrollSpeed(scrollDisabled ? 0 : scrollSpeedValue);
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
 #endif
     default:
         return CommandLineUnknown;
