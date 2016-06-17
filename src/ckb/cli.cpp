@@ -388,6 +388,51 @@ int CommandLine::runGlobal() {
             }
             break;
         }
+    case Command::CommandSpatialDithering:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+
+            // coerce "set" to "disable"/"enable" if possible
+            if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                task = commands[cmdOffset].toLower();
+                if (task.compare("on") == 0 || task.compare("1") == 0)
+                    task = "enable";
+                else if (task.compare("off") == 0 || task.compare("0") == 0)
+                    task = "disable";
+                else
+                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            }
+
+            if (task.compare("show") == 0) {
+                // display information about spatial dithering
+                qOut()
+                    << "Use spatial dithering to simulate extra color resolution: "
+                    << (settings.value("Program/Dither").toBool() ? "Enabled" : "Disabled") << "."
+                    << endl
+                    << "(May improve appearance on some keyboards)."
+                    << endl;
+            }
+            else if (task.compare("enable") == 0) {
+                // enable spatial dithering
+                settings.set("Program/Dither", true);
+                Kb::dither(true);
+                settings.cleanUp();
+            }
+            else if (task.compare("disable") == 0) {
+                // disable spatial dithering
+                settings.set("Program/Dither", false);
+                Kb::dither(false);
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
     default:
         return CommandLineUnknown;
     }
