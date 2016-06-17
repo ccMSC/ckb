@@ -163,6 +163,7 @@ Generally the command line interface needs a different approach, than the GUI. F
                | "mouse-acceleration" <input-bool>
                | "scroll-acceleration" <input-bool>
                | "scroll-acceleration-speed" <input-int>
+               | "long-macro-delay" <input-int>
 
 <input-int> ::= "show" | "set" <int>
 <input-float> ::= "show" | "set" <float>

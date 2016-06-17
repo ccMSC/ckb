@@ -29,6 +29,7 @@ int Command::resolveCommand(QString cmd) {
     else if (lowerCmd.compare("mouse-acceleration") == 0) return Command::CommandMouseAcceleration;
     else if (lowerCmd.compare("scroll-acceleration") == 0) return Command::CommandScrollAcceleration;
     else if (lowerCmd.compare("scroll-acceleration-speed") == 0) return Command::CommandScrollAccelerationSpeed;
+    else if (lowerCmd.compare("long-macro-delay") == 0) return Command::CommandLongMacroDelay;
 
     return Command::CommandUnknown;
 }
@@ -656,6 +657,52 @@ int CommandLine::runGlobal() {
             break;
         }
 #endif
+    case Command::CommandLongMacroDelay:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+
+            // coerce "set" to "disable"/"enable" if possible
+            if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                task = commands[cmdOffset].toLower();
+                if (task.compare("on") == 0 || task.compare("1") == 0)
+                    task = "enable";
+                else if (task.compare("off") == 0 || task.compare("0") == 0)
+                    task = "disable";
+                else
+                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            }
+
+            if (task.compare("show") == 0) {
+                // display information about the long macro delay
+                qOut()
+                    << "Use delay for very long macros: "
+                    << (settings.value("Program/MacroDelay").toBool() ? "Enabled" : "Disabled") << "."
+                    << endl
+                    << "(When using macros with strings longer than 25 chars, some OS may lose characters (e.g. Mint 17.2). Select to prevent that bug.)"
+                    << endl;
+            }
+            else if (task.compare("enable") == 0) {
+                // enable long macro delay
+                settings.set("Program/MacroDelay", true);
+                Kb::macroDelay(true);
+                settings.cleanUp();
+            }
+            else if (task.compare("disable") == 0) {
+                // disable long macro delay
+                settings.set("Program/MacroDelay", false);
+                Kb::macroDelay(false);
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+
+            break;
+        }
     default:
         return CommandLineUnknown;
     }

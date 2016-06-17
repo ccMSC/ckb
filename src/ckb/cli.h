@@ -31,6 +31,7 @@ public:
         CommandMouseAcceleration,
         CommandScrollAcceleration,
         CommandScrollAccelerationSpeed,
+        CommandLongMacroDelay,
 
         // Generic OK/Fail Flags
         CommandOK,
