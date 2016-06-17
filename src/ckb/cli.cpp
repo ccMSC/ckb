@@ -31,7 +31,7 @@ int Command::resolveCommand(QString cmd) {
 }
 
 int CommandLine::runGlobal() {
-    if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+    if (cmdOffset >= commands.length()) return CommandLineUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandInfo:
         {
@@ -71,10 +71,10 @@ int CommandLine::runGlobal() {
         }
     case Command::CommandLayout:
         {
-            if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
 
             // further specify the layout command
-            QString task = commands[cmdOffset++];
+            QString task = commands[cmdOffset++].toLower();
             if (task.compare("list") == 0) {
                 // get currently set layout and available layouts
                 KeyMap::Layout layout = KeyMap::getLayout(settings.value("Program/KbdLayout").toString());
@@ -93,7 +93,7 @@ int CommandLine::runGlobal() {
             }
             else if (task.compare("set") == 0) {
                 // get next argument to set as the new layout
-                if (cmdOffset >= commands.length()) return Command::CommandUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
                 KeyMap::Layout kl = KeyMap::getLayout(commands[cmdOffset++]);
 
                 // if layout is invalid, abort
@@ -109,7 +109,7 @@ int CommandLine::runGlobal() {
                     settings.set("Program/KbdLayout", KeyMap::getLayout(kl));
                     Kb::layout(kl);
 
-                    // wait until, settings are written completely
+                    // wait until settings are written completely
                     settings.cleanUp();
 
                     qOut()
