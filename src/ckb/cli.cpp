@@ -519,6 +519,53 @@ int CommandLine::runGlobal() {
             }
             break;
         }
+#ifdef Q_OS_MACX
+    case Command::CommandMouseAcceleration:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+
+            // coerce "set" to "disable"/"enable" if possible
+            if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                task = commands[cmdOffset].toLower();
+                if (task.compare("on") == 0 || task.compare("1") == 0)
+                    task = "enable";
+                else if (task.compare("off") == 0 || task.compare("0") == 0)
+                    task = "disable";
+                else
+                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            }
+
+            if (task.compare("show") == 0) {
+                // display information about mouse acceleration
+                qOut()
+                    << "Mouse acceleration: "
+                    << (settings.value("Program/DisableMouseAccel").toBool() ? "Disabled" : "Enabled") << "."
+                    << endl
+                    << "(Try this if you're having problems with mouse movement.)"
+                    << endl;
+            }
+            else if (task.compare("enable") == 0) {
+                // suppress mouse acceleration
+                settings.set("Program/DisableMouseAccel", false);
+                Kb::mouseAccel(true);
+                settings.cleanUp();
+            }
+            else if (task.compare("disable") == 0) {
+                // allow mouse acceleration
+                settings.set("Program/DisableMouseAccel", true);
+                Kb::mouseAccel(false);
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
+#endif
     default:
         return CommandLineUnknown;
     }
