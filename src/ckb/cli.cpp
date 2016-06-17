@@ -476,6 +476,49 @@ int CommandLine::runGlobal() {
             }
             break;
         }
+    case Command::CommandTrayIcon:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            QString task = commands[cmdOffset++].toLower();
+
+            // coerce "set" to "disable"/"enable" if possible
+            if (task.compare("set") == 0) {
+                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+                task = commands[cmdOffset].toLower();
+                if (task.compare("on") == 0 || task.compare("1") == 0)
+                    task = "enable";
+                else if (task.compare("off") == 0 || task.compare("0") == 0)
+                    task = "disable";
+                else
+                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            }
+
+            if (task.compare("show") == 0) {
+                // display information about the tray icon
+                qOut()
+                    << "Show tray icon: "
+                    << (settings.value("Program/SuppressTrayIcon").toBool() ? "Disabled" : "Enabled") << "."
+                    << endl
+                    << "(The tray icon will not be displayed, if disabled. The application will still run in the background; re-launch the app to see the GUI again.)"
+                    << endl;
+            }
+            else if (task.compare("enable") == 0) {
+                // suppress tray icon
+                settings.set("Program/SuppressTrayIcon", false);
+                settings.cleanUp();
+            }
+            else if (task.compare("disable") == 0) {
+                // allow tray icon
+                settings.set("Program/SuppressTrayIcon", true);
+                settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
     default:
         return CommandLineUnknown;
     }
