@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "animscript.h"
 #include "ckbsettings.h"
 #include "keymap.h"
 #include "kbmanager.h"
@@ -295,6 +296,39 @@ int CommandLine::runGlobal() {
 
                 // wait until settings are written completely
                 settings.cleanUp();
+            }
+            else {
+                return CommandLineUnknown;
+            }
+            break;
+        }
+    case Command::CommandAnimationDir:
+        {
+            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+
+            // whether it's "show" or "scan", both do the same
+            QString task = commands[cmdOffset++].toLower();
+            if (task.compare("show") == 0 || task.compare("scan") == 0) {
+                // scan and load the animations from the animation-dir
+                AnimScript::scan();
+
+                // display information about the results
+                qOut()
+                    << "Location: "
+                    << AnimScript::path()
+                    << " ";
+                switch (AnimScript::count()) {
+                case 0:
+                    qOut() << "No animations found.";
+                    break;
+                case 1:
+                    qOut() << "1 animation found.";
+                    break;
+                default:
+                    qOut() << QString("%1 animations found").arg(AnimScript::count());
+                    break;
+                }
+                qOut() << endl;
             }
             else {
                 return CommandLineUnknown;
