@@ -187,7 +187,7 @@ Generally the command line interface needs a different approach, than the GUI. F
 ### Device Commands
 
 ```
-<device-cmd> ::= "" | "info"
+<device-cmd> ::= "info"
                | "show profile"
                | "set profile" <profile-id>
                | "firmware" <firmware-cmd>
@@ -199,7 +199,7 @@ Generally the command line interface needs a different approach, than the GUI. F
 ### Profile Commands
 
 ```
-<profile-cmd> ::= "" | "list"
+<profile-cmd> ::= "list"
                 | "create" <profile-name>
                 | "duplicate" <profile-name>
                 | "rename" <profile-name> <profile-name>
