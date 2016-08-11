@@ -1,3 +1,5 @@
+This `macro-delay` version introduces a fixed 5ms delay for macro playback when `delay` is active.
+
 ckb: RGB Driver for Linux and OS X
 ==================================
 
