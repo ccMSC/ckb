@@ -198,9 +198,20 @@ int readcmd(usbdevice* kb, const char* line){
             }
             continue;
         }
-        case DELAY:
-            kb->delay = (!strcmp (word, "on")); // independendant from parameter to handle false commands like "delay off"
+        case DELAY: {
+            uint delay;
+            if(sscanf(word, "%u", &delay) == 1) {
+                // Add delay of `newdelay` microseconds to macro playback
+                kb->delay = delay; 
+            } else if(strcmp(word, "on") == 0) { 
+                // allow previous syntax, `delay on` means 30us delay
+                kb->delay = 30;
+            } else {
+                // bad parameter to handle false commands like "delay off"                
+                kb->delay = 0; // No delay.
+            }
             continue;
+        }
         default:;
         }
 
