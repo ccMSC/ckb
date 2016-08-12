@@ -1,4 +1,5 @@
-This `macro-delay` version introduces a fixed 5ms delay for macro playback when `delay` is active.
+This `macro-delay` version implements a delay between macro actions. 
+The delay is set with the ckb-daemon's `delay` command followed by an unsigned integer representing the number of microseconds to wait after each macro action and before the next. This also has a delay after the last action (still to be determined if that's a bug or a feature.)
 
 ckb: RGB Driver for Linux and OS X
 ==================================
