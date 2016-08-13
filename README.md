@@ -1,5 +1,44 @@
+ckb: RGB Driver for Linux and OS X with Macro Delay
+===================================================
+
 This `macro-delay` version implements a delay between macro actions. 
 The delay is set with the ckb-daemon's `delay` command followed by an unsigned integer representing the number of microseconds to wait after each macro action and before the next. This also has a delay after the last action (still to be determined if that's a bug or a feature.)
+
+Examples:
+````
+    delay 1000  # delay 1,000us between action playback
+    delay on    # delay 30us between action playback
+                # should be (how it worked before):
+                #   30us for 'short' macros (<200 actions)
+                #   100us for 'long' macros (>=200 acitions)
+    delay off   # no delay
+    delay 0     # no delay
+    delay spearmint-potato    # no delay
+````
+
+Macro Delay (specification)
+--------
+
+Allow each macro action to have a post-action delay associated with it. 
+If no delay is specified, then the global `delay` (above) is used. All
+delay values are in microsecods (us).
+
+Example; define a macro for `g5` with a 5,000us delay between the `e` 
+down and `e` up actions. A 1,000us delay between `l` up and `a` down.
+And a delay of one second (1,000,000us) after `y` up and before `enter`.
+
+````
+    macro g5:+d,-d,+e=5000,-e,+l,-l=10000,+a,-a,+y,-y=1000000,+enter,-enter
+````
+
+Example; use default delay between `d` down and `d` up and no delay (0us)
+after `d` up.
+````
+    macro g5:+d,-d=0
+````
+
+NOTE: Delays are limited to just over 1 hour (4,294,967,294us, 4,294 seconds,
+71 minutes, 1.19 hours).
 
 ckb: RGB Driver for Linux and OS X
 ==================================
