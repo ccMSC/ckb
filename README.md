@@ -7,8 +7,7 @@ The delay is set with the ckb-daemon's `delay` command followed by an unsigned i
 Examples:
 ````
     delay 1000  # delay 1,000us between action playback
-    delay on    # delay 30us between action playback
-                # should be (how it worked before):
+    delay on    # long macro delay -- how it worked before:
                 #   30us for 'short' macros (<200 actions)
                 #   100us for 'long' macros (>=200 acitions)
     delay off   # no delay
