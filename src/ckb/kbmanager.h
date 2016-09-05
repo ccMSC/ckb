@@ -42,6 +42,8 @@ public:
     // Timer for scanning the driver/device list. May also be useful for periodic GUI events. Created during init(), always runs at 10FPS.
     static inline QTimer* scanTimer()       { return _kbManager ? _kbManager->_scanTimer : 0; }
 
+    friend class CommandLine;
+
 signals:
     // A new device was connected.
     void kbConnected(Kb* device);

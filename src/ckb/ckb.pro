@@ -101,7 +101,8 @@ SOURCES += main.cpp\
     extrasettingswidget.cpp \
     kbmanager.cpp \
     colormap.cpp \
-    macroreader.cpp
+    macroreader.cpp \
+    cli.cpp
 
 HEADERS  += mainwindow.h \
     kbwidget.h \
@@ -159,7 +160,8 @@ HEADERS  += mainwindow.h \
     extrasettingswidget.h \
     kbmanager.h \
     colormap.h \
-    macroreader.h
+    macroreader.h \
+    cli.h
 
 FORMS    += mainwindow.ui \
     kbwidget.ui \

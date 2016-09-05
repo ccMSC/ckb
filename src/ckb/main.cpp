@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include "cli.h"
 
 QSharedMemory appShare("ckb");
 
@@ -27,7 +28,8 @@ enum CommandLineParseResults {
     CommandLineVersionRequested,
     CommandLineHelpRequested,
     CommandLineClose,
-    CommandLineBackground
+    CommandLineBackground,
+    CommandLineCommand
 };
 
 /**
@@ -55,6 +57,10 @@ CommandLineParseResults parseCommandLine(QCommandLineParser &parser, QString *er
     const QCommandLineOption closeOption(QStringList() << "c" << "close",
                                          "Causes already running instance (if any) to exit.");
     parser.addOption(closeOption);
+    // add -x, --cmd, --execute
+    const QCommandLineOption commandOption(QStringList() << "x" << "cmd" << "execute",
+                                           "Execute the given command without a GUI.");
+    parser.addOption(commandOption);
 
     /* parse arguments */
     if (!parser.parse(QCoreApplication::arguments())) {
@@ -82,6 +88,11 @@ CommandLineParseResults parseCommandLine(QCommandLineParser &parser, QString *er
     if (parser.isSet(closeOption)) {
         // close already running application instances, if any
         return CommandLineClose;
+    }
+
+    if (parser.isSet(commandOption)) {
+        // parse input and execute appropriate command
+        return CommandLineCommand;
     }
 
     /* no explicit argument was passed */
@@ -159,6 +170,7 @@ int main(int argc, char *argv[]){
     QString errorMessage;
     parser.setApplicationDescription("Open Source Corsair Input Device Driver for Linux and OSX.");
     bool background = 0;
+    bool isCmd = 0;
 
     // Although the daemon runs as root, the GUI needn't and shouldn't be, as it has the potential to corrupt settings data.
     if(getuid() == 0){
@@ -189,7 +201,7 @@ int main(int argc, char *argv[]){
     case CommandLineVersionRequested:
         // If launched with --version, print version info and then quit
         printf("%s %s\n", qPrintable(QCoreApplication::applicationName()),
-               qPrintable(QCoreApplication::applicationVersion()));
+                qPrintable(QCoreApplication::applicationVersion()));
         return 0;
     case CommandLineHelpRequested:
         // If launched with --help, print help and then quit
@@ -202,6 +214,17 @@ int main(int argc, char *argv[]){
         else
             printf("ckb is not running.\n");
         return 0;
+    case CommandLineCommand:
+        // If launched with --cmd, try to execute given command
+        static int cli_error = CommandLine::execute(QCoreApplication::arguments());
+        if (cli_error) {
+            // display help text and errors, if command couldn't be executed
+            if (cli_error == CommandLine::CommandLineUnknown)
+                parser.showHelp();
+            return cli_error;
+        }
+        // Also run ckb in background on execute command
+        isCmd = 1;
     case CommandLineBackground:
         // If launched with --background, launch in background
         background = 1;
@@ -212,7 +235,7 @@ int main(int argc, char *argv[]){
     if(qApp->isSessionRestored())
             background = 1;
     if(isRunning(background ? 0 : "Open")){
-        printf("ckb is already running. Exiting.\n");
+        if (!isCmd) printf("ckb is already running. Exiting.\n");
         return 0;
     }
     MainWindow w;
