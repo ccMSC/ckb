@@ -58,6 +58,7 @@ public:
 
     enum CommandLineResult {
         CommandLineOK,
+        CommandLineInvalid,
         CommandLineUnknown
     };
     static int execute(QStringList args);

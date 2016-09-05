@@ -219,7 +219,8 @@ int main(int argc, char *argv[]){
         static int cli_error = CommandLine::execute(QCoreApplication::arguments());
         if (cli_error) {
             // display help text and errors, if command couldn't be executed
-            parser.showHelp();
+            if (cli_error == CommandLine::CommandLineUnknown)
+                parser.showHelp();
             return cli_error;
         }
         // Also run ckb in background on execute command

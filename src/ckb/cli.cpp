@@ -35,7 +35,7 @@ int Command::resolveCommand(QString cmd) {
 }
 
 int CommandLine::runGlobal() {
-    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+    if (cmdOffset >= commands.length()) return CommandLineInvalid;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandInfo:
         {
@@ -75,7 +75,7 @@ int CommandLine::runGlobal() {
         }
     case Command::CommandLayout:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             // further specify the layout command
             QString task = commands[cmdOffset++].toLower();
@@ -97,7 +97,7 @@ int CommandLine::runGlobal() {
             }
             else if (task.compare("set") == 0) {
                 // get next argument to set as the new layout
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
                 KeyMap::Layout kl = KeyMap::getLayout(commands[cmdOffset++]);
 
                 // if layout is invalid, abort
@@ -106,7 +106,7 @@ int CommandLine::runGlobal() {
                         << "Could not set layout."
                         << endl;
 
-                    return CommandLineUnknown;
+                    return CommandLineInvalid;
                 }
                 else {
                     // persistently save new layout
@@ -122,7 +122,7 @@ int CommandLine::runGlobal() {
                 }
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
@@ -140,7 +140,7 @@ int CommandLine::runGlobal() {
             modNames << "Caps Lock" << "Shift" << "Control" << "Alt" << "Super";
 #endif
 
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
             QString task = commands[cmdOffset++].toLower();
             if (task.compare("list") == 0) {
                 // print each modifier and it's rebind
@@ -158,7 +158,7 @@ int CommandLine::runGlobal() {
             }
             else if (task.compare("set") == 0) {
                 // abort if arguments don't contain key and remap
-                if (cmdOffset+1 >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset+1 >= commands.length()) return CommandLineInvalid;
 
                 // get key and remap from arguments
                 QString key = commands[cmdOffset++].toLower();
@@ -170,7 +170,7 @@ int CommandLine::runGlobal() {
 
                 // abort if remap not in list
                 if ((QStringList() << "caps" << "shift" << "ctrl" << "alt" << "option" << "win" << "cmd").indexOf(mod) == -1)
-                    return CommandLineUnknown;
+                    return CommandLineInvalid;
 
                 // initialize newMods
                 QHash<QString, QString> newMods;
@@ -222,7 +222,7 @@ int CommandLine::runGlobal() {
                     newMods["rwin"] = rmod;
                 }
                 else {
-                    return CommandLineUnknown;
+                    return CommandLineInvalid;
                 }
 
                 // persistently store new remaps
@@ -253,14 +253,14 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
 
             break;
         }
     case Command::CommandFramerate:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
             if (task.compare("show") == 0) {
@@ -271,7 +271,7 @@ int CommandLine::runGlobal() {
                     << endl;
             }
             else if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 // get given framerate
                 bool ok;
@@ -283,7 +283,7 @@ int CommandLine::runGlobal() {
                     qOut()
                         << "Framerate must be a number between 0 and 60."
                         << endl;
-                    return CommandLineUnknown;
+                    return CommandLineInvalid;
                 }
 
                 // persistently store framerate and set it for current session
@@ -300,13 +300,13 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
     case Command::CommandAnimationDir:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             // whether it's "show" or "scan", both do the same
             QString task = commands[cmdOffset++].toLower();
@@ -333,19 +333,19 @@ int CommandLine::runGlobal() {
                 qOut() << endl;
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
     case Command::CommandBrightnessPerMode:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
 
             // coerce "set" to "disable"/"enable" if possible
             if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 task = commands[cmdOffset].toLower();
                 if (task.compare("on") == 0 || task.compare("1") == 0)
@@ -353,7 +353,7 @@ int CommandLine::runGlobal() {
                 else if (task.compare("off") == 0 || task.compare("0") == 0)
                     task = "disable";
                 else
-                    return CommandLineUnknown;
+                    return CommandLineInvalid;
             }
 
             if (task.compare("show") == 0) {
@@ -385,19 +385,19 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
     case Command::CommandSpatialDithering:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
 
             // coerce "set" to "disable"/"enable" if possible
             if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 task = commands[cmdOffset].toLower();
                 if (task.compare("on") == 0 || task.compare("1") == 0)
@@ -405,7 +405,7 @@ int CommandLine::runGlobal() {
                 else if (task.compare("off") == 0 || task.compare("0") == 0)
                     task = "disable";
                 else
-                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                    if (cmdOffset >= commands.length()) return CommandLineInvalid;
             }
 
             if (task.compare("show") == 0) {
@@ -430,19 +430,19 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
     case Command::CommandFirmwareAutocheck:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
 
             // coerce "set" to "disable"/"enable" if possible
             if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 task = commands[cmdOffset].toLower();
                 if (task.compare("on") == 0 || task.compare("1") == 0)
@@ -450,7 +450,7 @@ int CommandLine::runGlobal() {
                 else if (task.compare("off") == 0 || task.compare("0") == 0)
                     task = "disable";
                 else
-                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                    if (cmdOffset >= commands.length()) return CommandLineInvalid;
             }
 
             if (task.compare("show") == 0) {
@@ -473,19 +473,19 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
     case Command::CommandTrayIcon:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
 
             // coerce "set" to "disable"/"enable" if possible
             if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 task = commands[cmdOffset].toLower();
                 if (task.compare("on") == 0 || task.compare("1") == 0)
@@ -493,7 +493,7 @@ int CommandLine::runGlobal() {
                 else if (task.compare("off") == 0 || task.compare("0") == 0)
                     task = "disable";
                 else
-                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                    if (cmdOffset >= commands.length()) return CommandLineInvalid;
             }
 
             if (task.compare("show") == 0) {
@@ -516,20 +516,20 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
 #ifdef Q_OS_MACX
     case Command::CommandMouseAcceleration:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
 
             // coerce "set" to "disable"/"enable" if possible
             if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 task = commands[cmdOffset].toLower();
                 if (task.compare("on") == 0 || task.compare("1") == 0)
@@ -537,7 +537,7 @@ int CommandLine::runGlobal() {
                 else if (task.compare("off") == 0 || task.compare("0") == 0)
                     task = "disable";
                 else
-                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                    if (cmdOffset >= commands.length()) return CommandLineInvalid;
             }
 
             if (task.compare("show") == 0) {
@@ -562,19 +562,19 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
     case Command::CommandScrollAcceleration:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
 
             // coerce "set" to "disable"/"enable" if possible
             if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 task = commands[cmdOffset].toLower();
                 if (task.compare("on") == 0 || task.compare("1") == 0)
@@ -582,7 +582,7 @@ int CommandLine::runGlobal() {
                 else if (task.compare("off") == 0 || task.compare("0") == 0)
                     task = "disable";
                 else
-                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                    if (cmdOffset >= commands.length()) return CommandLineInvalid;
             }
 
             if (task.compare("show") == 0) {
@@ -607,13 +607,13 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
     case Command::CommandScrollAccelerationSpeed:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
             bool scrollDisabled = settings.value("Program/DisableScrollAccel");
@@ -631,7 +631,7 @@ int CommandLine::runGlobal() {
                     break;
             }
             else if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 // get given scroll speed
                 bool ok;
@@ -643,7 +643,7 @@ int CommandLine::runGlobal() {
                     qOut()
                         << "Scroll speed must be a number between 1 and 10."
                         << endl;
-                    return CommandLineUnknown;
+                    return CommandLineInvalid;
                 }
 
                 // set scroll acceleration speed (if enabled)
@@ -652,20 +652,20 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
             break;
         }
 #endif
     case Command::CommandLongMacroDelay:
         {
-            if (cmdOffset >= commands.length()) return CommandLineUnknown;
+            if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
             QString task = commands[cmdOffset++].toLower();
 
             // coerce "set" to "disable"/"enable" if possible
             if (task.compare("set") == 0) {
-                if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                if (cmdOffset >= commands.length()) return CommandLineInvalid;
 
                 task = commands[cmdOffset].toLower();
                 if (task.compare("on") == 0 || task.compare("1") == 0)
@@ -673,7 +673,7 @@ int CommandLine::runGlobal() {
                 else if (task.compare("off") == 0 || task.compare("0") == 0)
                     task = "disable";
                 else
-                    if (cmdOffset >= commands.length()) return CommandLineUnknown;
+                    if (cmdOffset >= commands.length()) return CommandLineInvalid;
             }
 
             if (task.compare("show") == 0) {
@@ -698,11 +698,13 @@ int CommandLine::runGlobal() {
                 settings.cleanUp();
             }
             else {
-                return CommandLineUnknown;
+                return CommandLineInvalid;
             }
 
             break;
         }
+    case Command::CommandHelp:
+        return CommandLineInvalid;
     default:
         return CommandLineUnknown;
     }
@@ -720,7 +722,30 @@ int CommandLine::run() {
     if (cmdOffset >= commands.length()) return CommandLineUnknown;
     switch (Command::resolveCommand(commands[cmdOffset++])) {
     case Command::CommandGlobal:
-        return runGlobal();
+        {
+            int global = runGlobal();
+            if (global == CommandLineInvalid) {
+                qOut()
+                    << "Syntax: global CMD" << endl
+                    << "Where:  CMD = info" << endl
+                    << "            | layout { list | set LAYOUT }" << endl
+                    << "            | modifier { list | set KEY MOD | reset }" << endl
+                    << "            | framerate { show | set VALUE }" << endl
+                    << "            | animation-dir { show | scan }" << endl
+                    << "            | brightness-per-mode { show | set VALUE }" << endl
+                    << "            | spatial-dithering { show | set VALUE }" << endl
+                    << "            | firmware-autocheck { show | set VALUE }" << endl
+                    << "            | tray-icon { show | set VALUE }" << endl
+                    << "            | mouse-acceleration { show | set VALUE }" << endl
+                    << "            | scroll-acceleration { show | set VALUE }" << endl
+                    << "            | scroll-acceleration-speed { show set VALUE }" << endl
+                    << "            | long-macro-delay { show | set VALUE }" << endl << endl;
+
+                global = CommandLineOK;
+            }
+
+            return global;
+        }
     case Command::CommandDevice:
         qDebug() << "Device:";
         break;
