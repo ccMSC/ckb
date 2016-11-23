@@ -25,6 +25,16 @@ function finish {
     exit $1
 }
 
+#Function to install packages using apt-get
+function installPackage {
+    if [[ -n $1 ]]; then
+        echo "Installing $1."
+        sudo apt-get install --assume-yes $1 > /dev/null
+        checkfail $?
+        echo "Done"
+    fi
+}
+
 # Directories
 cd "`dirname \"$0\"`"
 SRCDIR="src"
@@ -41,6 +51,20 @@ if [[ $(readlink -f "`pwd`") == *" "* ]]; then
 fi
 
 if [[ -d $SRCDIR ]]; then
+    #Check if Distro is Ubuntu
+    if [[ "$OSTYPE" != "darwin"* ]]; then
+        if [[ -f "/usr/bin/lsb_release" ]]; then
+            UBUNTU=`lsb_release -d | grep -o "Ubuntu.*"`
+            if [[ $UBUNTU == "Ubuntu"* ]]; then
+                #Check if libappindicator-dev is installed
+                if [[ -z `dpkg-query --showformat='${Status}' -W libappindicator-dev 2>/dev/null | grep -o "install ok installed"` ]]; then
+                    #Force installation on Unity
+                    [[ $XDG_CURRENT_DESKTOP == "Unity" ]] && installPackage "libappindicator-dev"
+                fi  
+            fi
+        fi
+    fi
+
     echo "Preparing build files..."
     # Clean first
     make clean >/dev/null 2>&1
