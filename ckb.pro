@@ -6,6 +6,7 @@ SUBDIRS = \
     src/ckb-ripple \
     src/ckb-wave \
     src/ckb-gradient \
+    src/ckb-invaders \
     src/ckb-pinwheel \
     src/ckb-random \
     src/ckb-rain
