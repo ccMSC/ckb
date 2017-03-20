@@ -98,6 +98,7 @@ Afterward, remove the applications and related files:
 ```
 sudo rm -f /usr/bin/ckb /usr/bin/ckb-daemon /usr/share/applications/ckb.desktop /usr/share/icons/hicolor/512x512/apps/ckb.png
 sudo rm -rf /usr/bin/ckb-animations
+rm ~/.config/autostart/ckb.desktop
 ```
 
 OS X Installation
