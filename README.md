@@ -1,6 +1,15 @@
 ckb: RGB Driver for Linux and OS X
 ==================================
 
+**This project is no longer maintained.** I simply do not have the time to work on it anymore. Thanks to everyone who helped me to test and develop it.
+
+**An actively-developed version can be found here:** https://github.com/mattanger/ckb-next
+
+Please check them out instead. Thanks!
+
+Original readme
+---------------
+
 **ckb** is an open-source driver for Corsair keyboards and mice. It aims to bring the features of their proprietary CUE software to the Linux and Mac operating systems. This project is currently a work in progress, but it already supports much of the same functionality, including full RGB animations. More features are coming soon. Testing and bug reports are appreciated!
 
 ![Screenshot](https://i.imgur.com/zMK9jOP.png)
