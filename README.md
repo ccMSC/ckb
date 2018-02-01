@@ -3,7 +3,7 @@ ckb: RGB Driver for Linux and OS X
 
 **This project is no longer maintained.** I simply do not have the time to work on it anymore. Thanks to everyone who helped me to test and develop it.
 
-**An actively-developed version can be found here:** https://github.com/mattanger/ckb-next
+**An actively-developed version can be found here:** https://github.com/ckb-next/ckb-next
 
 Please check them out instead. Thanks!
 
